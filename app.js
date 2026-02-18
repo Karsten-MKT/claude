@@ -14,7 +14,7 @@
     { id: 'irishcoffee', name: 'Irish Coffee', emoji: '☕', points: 2 },
     { id: 'cider', name: 'Cider', emoji: '🍎', points: 1 },
     { id: 'shot', name: 'Shot', emoji: '🥃', points: 3 },
-    { id: 'cocktail', name: 'Cocktail', emoji: '🍹', points: 2 },
+    { id: 'jgl', name: 'JGL', emoji: '🍹', points: 2 },
     { id: 'wine', name: 'Wein', emoji: '🍷', points: 1 },
     { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 0 },
   ];
@@ -35,13 +35,89 @@
   var selectedDrinkId = null;
   var countdownInterval = null;
 
+  // ==========================================
+  //  FIREBASE CONFIG
+  //  Trage hier deine Firebase-Projekt-Daten ein.
+  //  Anleitung: https://console.firebase.google.com
+  //  1. Neues Projekt erstellen
+  //  2. Realtime Database aktivieren (Regeln auf true setzen)
+  //  3. Web-App hinzufuegen und Config hier eintragen
+  // ==========================================
+  var FIREBASE_CONFIG = {
+    apiKey: "",
+    authDomain: "",
+    databaseURL: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  };
+
+  var db = null;
+  var firebaseReady = false;
+  var ignoreNextFirebaseUpdate = false;
+
+  function initFirebase() {
+    if (!FIREBASE_CONFIG.databaseURL || typeof firebase === 'undefined') return;
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.database();
+      firebaseReady = true;
+      listenToFirebase();
+      console.log('Firebase connected');
+    } catch (e) {
+      console.error('Firebase init error:', e);
+    }
+  }
+
+  function syncToFirebase() {
+    if (!firebaseReady || !db) return;
+    ignoreNextFirebaseUpdate = true;
+    var shared = {
+      members: state.members,
+      log: state.log,
+      event: state.event,
+      checkedIn: state.checkedIn,
+      drinks: state.drinks
+    };
+    db.ref('winchester').set(shared).then(function () {
+      setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
+    }).catch(function (e) {
+      console.error('Firebase sync error:', e);
+      ignoreNextFirebaseUpdate = false;
+    });
+  }
+
+  function listenToFirebase() {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester').on('value', function (snapshot) {
+      if (ignoreNextFirebaseUpdate) return;
+      var data = snapshot.val();
+      if (!data) return;
+      state.members = data.members || [];
+      state.log = data.log || [];
+      state.event = data.event || null;
+      state.checkedIn = data.checkedIn || [];
+      if (data.drinks && data.drinks.length > 0) {
+        state.drinks = data.drinks;
+      }
+      saveLocal();
+      renderAll();
+    });
+  }
+
   // --- Persistence ---
-  function saveState() {
+  function saveLocal() {
     try {
       localStorage.setItem('winchester-state', JSON.stringify(state));
     } catch (e) {
       console.error('Save error:', e);
     }
+  }
+
+  function saveState() {
+    saveLocal();
+    syncToFirebase();
   }
 
   function loadState() {
@@ -57,9 +133,31 @@
         state.event = parsed.event || null;
         state.pubLocation = parsed.pubLocation || null;
         state.checkedIn = parsed.checkedIn || [];
+
+        // Migrate: rename old "cocktail" drink to "jgl"
+        for (var i = 0; i < state.drinks.length; i++) {
+          if (state.drinks[i].id === 'cocktail') {
+            state.drinks[i].id = 'jgl';
+            state.drinks[i].name = 'JGL';
+          }
+        }
+        for (var j = 0; j < state.log.length; j++) {
+          if (state.log[j].drinkId === 'cocktail') {
+            state.log[j].drinkId = 'jgl';
+            state.log[j].drinkName = 'JGL';
+          }
+        }
       }
     } catch (e) {
       console.error('Load error:', e);
+    }
+  }
+
+  function renderAll() {
+    var activePage = document.querySelector('.page.active');
+    if (activePage) {
+      var pageId = activePage.id.replace('page-', '');
+      refreshPage(pageId);
     }
   }
 
@@ -591,7 +689,6 @@
     if (!confirm('Wirklich ALLE Daten löschen?')) return;
     if (!confirm('Bist du sicher? Alle Getränke, Mitglieder und Termine werden gelöscht.')) return;
 
-    localStorage.removeItem('winchester-state');
     state = {
       members: [],
       drinks: DEFAULT_DRINKS.map(function (d) { return Object.assign({}, d); }),
@@ -603,6 +700,7 @@
     selectedMemberId = null;
     selectedDrinkId = null;
     if (countdownInterval) clearInterval(countdownInterval);
+    saveState();
     renderSettings();
     renderHome();
     showToast('Alle Daten gelöscht');
@@ -685,6 +783,7 @@
   // ==========================================
   function init() {
     loadState();
+    initFirebase();
     initNavigation();
     renderHome();
 
