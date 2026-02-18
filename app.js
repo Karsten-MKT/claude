@@ -44,13 +44,7 @@
   //  3. Web-App hinzufuegen und Config hier eintragen
   // ==========================================
   var FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    databaseURL: "https://winchester-app-c8241-default-rtdb.europe-west1.firebasedatabase.app"
   };
 
   var db = null;
