@@ -1,11 +1,11 @@
-const CACHE_NAME = 'winchester-v4';
+const CACHE_NAME = 'winchester-v5';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './icon.svg'
+  './icon.jpg'
 ];
 
 self.addEventListener('install', (e) => {
