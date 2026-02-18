@@ -1,0 +1,863 @@
+/* ========================================
+   Winchester Irish Pub - Stylesheet
+   Farben: Moos-Grün, Schwarz, Gold
+   ======================================== */
+
+:root {
+  --bg: #0d0b07;
+  --bg-card: #16130e;
+  --bg-card-border: #2a2419;
+  --green-dark: #1a2e14;
+  --green: #2d5a27;
+  --green-light: #3a7033;
+  --green-glow: #4a9040;
+  --gold-dark: #8b7635;
+  --gold: #c9a84c;
+  --gold-light: #e8d5a3;
+  --text: #f0ebe0;
+  --text-dim: #8a8377;
+  --text-muted: #5a5449;
+  --danger: #8b2020;
+  --danger-light: #b83030;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --nav-height: 72px;
+  --header-height: 56px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ===== Header ===== */
+#app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--header-height) + var(--safe-top));
+  padding-top: var(--safe-top);
+  background: linear-gradient(180deg, #12100a 0%, #0d0b07 100%);
+  border-bottom: 1px solid var(--bg-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#app-header h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ===== Main Content ===== */
+#app-main {
+  padding-top: calc(var(--header-height) + var(--safe-top));
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  min-height: 100vh;
+}
+
+/* ===== Pages ===== */
+.page {
+  display: none;
+  padding: 16px;
+  animation: fadeIn 0.25s ease;
+}
+
+.page.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  color: var(--gold);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+/* ===== Bottom Nav ===== */
+#bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--nav-height) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: linear-gradient(0deg, #0a0907 0%, #12100a 100%);
+  border-top: 1px solid var(--bg-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  min-width: 64px;
+}
+
+.nav-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-btn.active {
+  color: var(--gold);
+}
+
+.nav-btn:active {
+  transform: scale(0.92);
+}
+
+/* ===== Cards ===== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  color: var(--gold-light);
+  margin-bottom: 12px;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+  color: var(--text);
+  border: 1px solid var(--green-light);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--green-light) 0%, var(--green) 100%);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: #1a1209;
+  font-weight: 700;
+}
+
+.btn-secondary {
+  background: var(--bg-card-border);
+  color: var(--text);
+  border: 1px solid var(--text-muted);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--text);
+  border: 1px solid var(--danger-light);
+}
+
+.btn-large {
+  padding: 16px 24px;
+  font-size: 18px;
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+  width: auto;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-icon:hover {
+  color: var(--text);
+}
+
+.btn-delete:hover {
+  color: var(--danger-light);
+}
+
+/* ===== Inputs ===== */
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  margin-bottom: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--gold-dark);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== Logo ===== */
+.logo-container {
+  text-align: center;
+  padding: 12px 0 8px;
+}
+
+.logo {
+  width: 120px;
+  height: 120px;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(201, 168, 76, 0.15);
+}
+
+/* ===== Check-in ===== */
+.check-in-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.offline {
+  background: var(--text-muted);
+}
+
+.status-dot.online {
+  background: var(--green-glow);
+  box-shadow: 0 0 8px var(--green-glow);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.checked-in-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.checked-in-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: var(--green-dark);
+  border: 1px solid var(--green);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ===== Countdown ===== */
+.countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px 0;
+}
+
+.countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.countdown-number {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  min-width: 56px;
+  text-align: center;
+}
+
+.countdown-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.countdown-separator {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 32px;
+  color: var(--gold-dark);
+  margin-top: -16px;
+}
+
+.event-name {
+  text-align: center;
+  color: var(--gold-light);
+  font-size: 15px;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+.no-event {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+/* ===== Leaderboard ===== */
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: transform 0.2s;
+}
+
+.leaderboard-entry.top-1 {
+  border-color: var(--gold-dark);
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.1) 0%, var(--bg-card) 100%);
+}
+
+.leaderboard-entry.top-2 {
+  border-color: #6b6b6b;
+  background: linear-gradient(135deg, rgba(180, 180, 180, 0.05) 0%, var(--bg-card) 100%);
+}
+
+.leaderboard-entry.top-3 {
+  border-color: #7a5430;
+  background: linear-gradient(135deg, rgba(180, 110, 50, 0.08) 0%, var(--bg-card) 100%);
+}
+
+.rank {
+  font-size: 22px;
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.entry-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.entry-drinks {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.points-number {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.points-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 32px 16px;
+}
+
+/* ===== Drink Selection ===== */
+.member-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 20px;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.member-chip.selected {
+  background: var(--green-dark);
+  border-color: var(--green);
+  color: var(--text);
+}
+
+.member-chip:active {
+  transform: scale(0.95);
+}
+
+.drink-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 8px;
+}
+
+.drink-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drink-card.selected {
+  background: var(--green-dark);
+  border-color: var(--gold-dark);
+  transform: scale(1.05);
+}
+
+.drink-card:active {
+  transform: scale(0.95);
+}
+
+.drink-emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.drink-name {
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.drink-points {
+  font-size: 10px;
+  color: var(--gold-dark);
+  font-weight: 600;
+}
+
+/* ===== Recent Drinks ===== */
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recent-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.recent-entry:last-child {
+  border-bottom: none;
+}
+
+.recent-entry .time {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===== Settings ===== */
+.members-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+}
+
+.add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.add-row .input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.add-row .btn {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 20px;
+  padding: 0;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.hint a {
+  color: var(--gold);
+  text-decoration: underline;
+}
+
+.location-info {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 10px;
+}
+
+.drinks-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drink-manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.drink-manage-row:last-child {
+  border-bottom: none;
+}
+
+.drink-points-badge {
+  font-size: 12px;
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ===== Modal ===== */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px;
+  padding-bottom: calc(24px + var(--safe-bottom));
+  width: 100%;
+  max-width: 480px;
+  max-height: 70vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.modal-content h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  color: var(--gold);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.checkin-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.checkin-member-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.checkin-member-btn.checked {
+  background: var(--green-dark);
+  border-color: var(--green);
+}
+
+.checkin-member-btn .avatar {
+  font-size: 24px;
+}
+
+.checkin-member-btn .check-mark {
+  margin-left: auto;
+  color: var(--green-glow);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ===== Geo Banner ===== */
+.geo-banner {
+  position: fixed;
+  top: calc(var(--header-height) + var(--safe-top));
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 100%);
+  border-bottom: 1px solid var(--green-light);
+  padding: 12px 16px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 150;
+  font-size: 14px;
+  animation: slideDown 0.3s ease;
+}
+
+.geo-banner.show {
+  display: flex;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-card);
+  border: 1px solid var(--gold-dark);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 300;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ===== Prost Animation ===== */
+@keyframes prostBounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.15); }
+  50% { transform: scale(0.95); }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.prost-anim {
+  animation: prostBounce 0.5s ease;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card-border);
+  border-radius: 2px;
+}
+
+/* ===== Desktop/Tablet ===== */
+@media (min-width: 600px) {
+  #app-main {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  #bottom-nav {
+    max-width: 480px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .drink-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

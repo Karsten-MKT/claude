@@ -1,0 +1,713 @@
+/* ========================================
+   Winchester Irish Pub - App Logic
+   ======================================== */
+
+(function () {
+  'use strict';
+
+  // --- Default Drinks ---
+  const DEFAULT_DRINKS = [
+    { id: 'guinness', name: 'Guinness', emoji: '🍺', points: 2 },
+    { id: 'kilkenny', name: 'Kilkenny', emoji: '🍺', points: 2 },
+    { id: 'beer', name: 'Bier', emoji: '🍻', points: 1 },
+    { id: 'whiskey', name: 'Whiskey', emoji: '🥃', points: 3 },
+    { id: 'irishcoffee', name: 'Irish Coffee', emoji: '☕', points: 2 },
+    { id: 'cider', name: 'Cider', emoji: '🍎', points: 1 },
+    { id: 'shot', name: 'Shot', emoji: '🥃', points: 3 },
+    { id: 'cocktail', name: 'Cocktail', emoji: '🍹', points: 2 },
+    { id: 'wine', name: 'Wein', emoji: '🍷', points: 1 },
+    { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 0 },
+  ];
+
+  const AVATARS = ['🧔', '👨', '👩', '🧑', '👴', '👵', '🤠', '🧛', '🧙', '🎅'];
+
+  // --- State ---
+  var state = {
+    members: [],
+    drinks: DEFAULT_DRINKS.map(function (d) { return Object.assign({}, d); }),
+    log: [],
+    event: null,
+    pubLocation: null,
+    checkedIn: [],
+  };
+
+  var selectedMemberId = null;
+  var selectedDrinkId = null;
+  var countdownInterval = null;
+
+  // --- Persistence ---
+  function saveState() {
+    try {
+      localStorage.setItem('winchester-state', JSON.stringify(state));
+    } catch (e) {
+      console.error('Save error:', e);
+    }
+  }
+
+  function loadState() {
+    try {
+      var saved = localStorage.getItem('winchester-state');
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        state.members = parsed.members || [];
+        state.drinks = parsed.drinks && parsed.drinks.length > 0
+          ? parsed.drinks
+          : DEFAULT_DRINKS.map(function (d) { return Object.assign({}, d); });
+        state.log = parsed.log || [];
+        state.event = parsed.event || null;
+        state.pubLocation = parsed.pubLocation || null;
+        state.checkedIn = parsed.checkedIn || [];
+      }
+    } catch (e) {
+      console.error('Load error:', e);
+    }
+  }
+
+  // --- Helpers ---
+  function uuid() {
+    return 'xxxx-xxxx-xxxx'.replace(/x/g, function () {
+      return (Math.random() * 16 | 0).toString(16);
+    });
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // --- Toast ---
+  function showToast(message, duration) {
+    duration = duration || 2500;
+    var toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, duration);
+  }
+
+  // --- Navigation ---
+  function initNavigation() {
+    var buttons = document.querySelectorAll('.nav-btn');
+    for (var i = 0; i < buttons.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          navigateTo(btn.getAttribute('data-page'));
+        });
+      })(buttons[i]);
+    }
+  }
+
+  function navigateTo(pageId) {
+    var pages = document.querySelectorAll('.page');
+    for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+    document.getElementById('page-' + pageId).classList.add('active');
+
+    var navBtns = document.querySelectorAll('.nav-btn');
+    for (var j = 0; j < navBtns.length; j++) navBtns[j].classList.remove('active');
+    var activeBtn = document.querySelector('.nav-btn[data-page="' + pageId + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+
+    refreshPage(pageId);
+  }
+
+  function refreshPage(pageId) {
+    switch (pageId) {
+      case 'home': renderHome(); break;
+      case 'leaderboard': renderLeaderboard(); break;
+      case 'drinks': renderDrinksPage(); break;
+      case 'settings': renderSettings(); break;
+    }
+  }
+
+  // ==========================================
+  //  HOME
+  // ==========================================
+  function renderHome() {
+    updateCheckInStatus();
+    renderCheckedIn();
+    renderCountdown();
+  }
+
+  function updateCheckInStatus() {
+    var el = document.getElementById('check-in-status');
+    var count = state.checkedIn.length;
+    if (count > 0) {
+      el.innerHTML = '<span class="status-dot online"></span><span>' + count + ' im Winchester</span>';
+    } else {
+      el.innerHTML = '<span class="status-dot offline"></span><span>Niemand eingecheckt</span>';
+    }
+  }
+
+  function renderCheckedIn() {
+    var list = document.getElementById('checked-in-list');
+    if (state.checkedIn.length === 0) {
+      list.innerHTML = '';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < state.checkedIn.length; i++) {
+      var member = findMember(state.checkedIn[i]);
+      if (member) {
+        html += '<span class="checked-in-chip">' + member.avatar + ' ' + escapeHtml(member.name) + '</span>';
+      }
+    }
+    list.innerHTML = html;
+  }
+
+  // --- Countdown ---
+  function renderCountdown() {
+    var noMsg = document.getElementById('no-event-msg');
+    var display = document.getElementById('countdown-display');
+    var eventNameEl = document.getElementById('countdown-event-name');
+
+    if (!state.event || !state.event.date) {
+      noMsg.style.display = 'block';
+      display.style.display = 'none';
+      eventNameEl.style.display = 'none';
+      if (countdownInterval) clearInterval(countdownInterval);
+      return;
+    }
+
+    noMsg.style.display = 'none';
+    display.style.display = 'flex';
+
+    if (state.event.name) {
+      eventNameEl.textContent = state.event.name;
+      eventNameEl.style.display = 'block';
+    } else {
+      eventNameEl.style.display = 'none';
+    }
+
+    updateCountdown();
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(updateCountdown, 1000);
+  }
+
+  function updateCountdown() {
+    if (!state.event || !state.event.date) return;
+    var now = Date.now();
+    var target = new Date(state.event.date).getTime();
+    var diff = target - now;
+
+    if (diff <= 0) {
+      document.getElementById('cd-days').textContent = '00';
+      document.getElementById('cd-hours').textContent = '00';
+      document.getElementById('cd-minutes').textContent = '00';
+      document.getElementById('cd-seconds').textContent = '00';
+      if (countdownInterval) clearInterval(countdownInterval);
+      return;
+    }
+
+    var days = Math.floor(diff / 86400000);
+    var hours = Math.floor((diff % 86400000) / 3600000);
+    var minutes = Math.floor((diff % 3600000) / 60000);
+    var seconds = Math.floor((diff % 60000) / 1000);
+
+    document.getElementById('cd-days').textContent = pad(days);
+    document.getElementById('cd-hours').textContent = pad(hours);
+    document.getElementById('cd-minutes').textContent = pad(minutes);
+    document.getElementById('cd-seconds').textContent = pad(seconds);
+  }
+
+  function pad(n) {
+    return n < 10 ? '0' + n : '' + n;
+  }
+
+  // ==========================================
+  //  CHECK-IN
+  // ==========================================
+  function openCheckIn() {
+    if (state.members.length === 0) {
+      showToast('Füge zuerst Stammgäste hinzu!');
+      navigateTo('settings');
+      return;
+    }
+    renderCheckInModal();
+    document.getElementById('checkin-modal').classList.add('show');
+  }
+
+  function renderCheckInModal() {
+    var container = document.getElementById('checkin-members');
+    var html = '';
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      var isChecked = state.checkedIn.indexOf(m.id) >= 0;
+      html += '<button class="checkin-member-btn ' + (isChecked ? 'checked' : '') + '" data-member-id="' + m.id + '">'
+        + '<span class="avatar">' + m.avatar + '</span>'
+        + '<span>' + escapeHtml(m.name) + '</span>'
+        + (isChecked ? '<span class="check-mark">✓</span>' : '')
+        + '</button>';
+    }
+    container.innerHTML = html;
+
+    // Attach click handlers
+    var buttons = container.querySelectorAll('.checkin-member-btn');
+    for (var j = 0; j < buttons.length; j++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          toggleMemberCheckIn(btn.getAttribute('data-member-id'));
+        });
+      })(buttons[j]);
+    }
+  }
+
+  function toggleMemberCheckIn(memberId) {
+    var idx = state.checkedIn.indexOf(memberId);
+    if (idx >= 0) {
+      state.checkedIn.splice(idx, 1);
+    } else {
+      state.checkedIn.push(memberId);
+    }
+    saveState();
+    renderCheckInModal();
+    updateCheckInStatus();
+    renderCheckedIn();
+  }
+
+  function closeCheckInModal() {
+    document.getElementById('checkin-modal').classList.remove('show');
+  }
+
+  // ==========================================
+  //  LEADERBOARD
+  // ==========================================
+  function renderLeaderboard() {
+    var container = document.getElementById('leaderboard-list');
+
+    if (state.members.length === 0 || state.log.length === 0) {
+      container.innerHTML = '<p class="empty-state">Noch keine Einträge.<br>Füge Stammgäste hinzu und tracke Getränke!</p>';
+      return;
+    }
+
+    // Build board
+    var board = {};
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      board[m.id] = { member: m, totalPoints: 0, totalDrinks: 0, drinkCounts: {} };
+    }
+
+    for (var j = 0; j < state.log.length; j++) {
+      var entry = state.log[j];
+      if (board[entry.memberId]) {
+        board[entry.memberId].totalPoints += entry.points;
+        board[entry.memberId].totalDrinks += 1;
+        var dn = entry.drinkName || entry.drinkId;
+        board[entry.memberId].drinkCounts[dn] = (board[entry.memberId].drinkCounts[dn] || 0) + 1;
+      }
+    }
+
+    // Sort
+    var sorted = [];
+    for (var id in board) {
+      if (board[id].totalDrinks > 0) sorted.push(board[id]);
+    }
+    sorted.sort(function (a, b) { return b.totalPoints - a.totalPoints; });
+
+    if (sorted.length === 0) {
+      container.innerHTML = '<p class="empty-state">Noch keine Getränke getrackt!</p>';
+      return;
+    }
+
+    var medals = ['🥇', '🥈', '🥉'];
+    var html = '';
+    for (var k = 0; k < sorted.length; k++) {
+      var e = sorted[k];
+      var drinkParts = [];
+      for (var dname in e.drinkCounts) {
+        drinkParts.push(e.drinkCounts[dname] + 'x ' + dname);
+      }
+      var summary = drinkParts.join(', ');
+      var rankClass = k < 3 ? ' top-' + (k + 1) : '';
+
+      html += '<div class="leaderboard-entry' + rankClass + '">'
+        + '<div class="rank">' + (k < 3 ? medals[k] : (k + 1)) + '</div>'
+        + '<div class="entry-info">'
+        + '<div class="entry-name">' + e.member.avatar + ' ' + escapeHtml(e.member.name) + '</div>'
+        + '<div class="entry-drinks">' + escapeHtml(summary) + '</div>'
+        + '</div>'
+        + '<div class="entry-points">'
+        + '<span class="points-number">' + e.totalPoints + '</span>'
+        + '<span class="points-label">Pkt</span>'
+        + '</div></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  //  DRINKS PAGE
+  // ==========================================
+  function renderDrinksPage() {
+    renderMemberChips();
+    renderDrinkGrid();
+    renderRecentDrinks();
+    updateAddButton();
+  }
+
+  function renderMemberChips() {
+    var container = document.getElementById('member-select');
+    if (state.members.length === 0) {
+      container.innerHTML = '<p class="hint">Keine Stammgäste. Unter "Mehr" hinzufügen.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      var sel = selectedMemberId === m.id ? ' selected' : '';
+      html += '<button class="member-chip' + sel + '" data-id="' + m.id + '">'
+        + m.avatar + ' ' + escapeHtml(m.name) + '</button>';
+    }
+    container.innerHTML = html;
+
+    var chips = container.querySelectorAll('.member-chip');
+    for (var j = 0; j < chips.length; j++) {
+      (function (chip) {
+        chip.addEventListener('click', function () {
+          selectMember(chip.getAttribute('data-id'));
+        });
+      })(chips[j]);
+    }
+  }
+
+  function renderDrinkGrid() {
+    var container = document.getElementById('drink-select');
+    var html = '';
+    for (var i = 0; i < state.drinks.length; i++) {
+      var d = state.drinks[i];
+      var sel = selectedDrinkId === d.id ? ' selected' : '';
+      html += '<button class="drink-card' + sel + '" data-id="' + d.id + '">'
+        + '<span class="drink-emoji">' + d.emoji + '</span>'
+        + '<span class="drink-name">' + escapeHtml(d.name) + '</span>'
+        + '<span class="drink-points">' + d.points + ' Pkt</span>'
+        + '</button>';
+    }
+    container.innerHTML = html;
+
+    var cards = container.querySelectorAll('.drink-card');
+    for (var j = 0; j < cards.length; j++) {
+      (function (card) {
+        card.addEventListener('click', function () {
+          selectDrink(card.getAttribute('data-id'));
+        });
+      })(cards[j]);
+    }
+  }
+
+  function renderRecentDrinks() {
+    var container = document.getElementById('recent-drinks');
+    var recent = state.log.slice(-10).reverse();
+    if (recent.length === 0) {
+      container.innerHTML = '<p class="hint">Noch keine Runden</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < recent.length; i++) {
+      var entry = recent[i];
+      var member = findMember(entry.memberId);
+      var drink = findDrink(entry.drinkId);
+      var time = new Date(entry.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      html += '<div class="recent-entry">'
+        + '<span>' + (member ? member.avatar + ' ' + escapeHtml(member.name) : 'Unbekannt') + '</span>'
+        + '<span>' + (drink ? drink.emoji + ' ' : '') + escapeHtml(entry.drinkName || 'Unbekannt') + '</span>'
+        + '<span class="time">' + time + '</span>'
+        + '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function updateAddButton() {
+    document.getElementById('btn-add-drink').disabled = !selectedMemberId || !selectedDrinkId;
+  }
+
+  function selectMember(id) {
+    selectedMemberId = selectedMemberId === id ? null : id;
+    renderMemberChips();
+    updateAddButton();
+  }
+
+  function selectDrink(id) {
+    selectedDrinkId = selectedDrinkId === id ? null : id;
+    renderDrinkGrid();
+    updateAddButton();
+  }
+
+  function addDrink() {
+    if (!selectedMemberId || !selectedDrinkId) return;
+    var member = findMember(selectedMemberId);
+    var drink = findDrink(selectedDrinkId);
+    if (!member || !drink) return;
+
+    state.log.push({
+      id: uuid(),
+      memberId: member.id,
+      drinkId: drink.id,
+      drinkName: drink.name,
+      points: drink.points,
+      timestamp: Date.now(),
+    });
+
+    saveState();
+    showToast(drink.emoji + ' ' + drink.name + ' für ' + member.name + '! +' + drink.points + ' Pkt');
+
+    // Animate button
+    var btn = document.getElementById('btn-add-drink');
+    btn.classList.add('prost-anim');
+    setTimeout(function () { btn.classList.remove('prost-anim'); }, 600);
+
+    selectedDrinkId = null;
+    renderDrinksPage();
+  }
+
+  // ==========================================
+  //  SETTINGS
+  // ==========================================
+  function renderSettings() {
+    renderMembersList();
+    renderDrinksManage();
+    renderLocationStatus();
+
+    if (state.event) {
+      document.getElementById('input-event-name').value = state.event.name || '';
+      document.getElementById('input-event-date').value = state.event.date || '';
+    }
+  }
+
+  function renderMembersList() {
+    var container = document.getElementById('members-list');
+    if (state.members.length === 0) {
+      container.innerHTML = '<p class="hint">Noch keine Stammgäste</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      html += '<div class="member-row">'
+        + '<span>' + m.avatar + ' ' + escapeHtml(m.name) + '</span>'
+        + '<button class="btn-icon btn-delete" data-id="' + m.id + '" title="Entfernen">✕</button>'
+        + '</div>';
+    }
+    container.innerHTML = html;
+
+    var delBtns = container.querySelectorAll('.btn-delete');
+    for (var j = 0; j < delBtns.length; j++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          removeMember(btn.getAttribute('data-id'));
+        });
+      })(delBtns[j]);
+    }
+  }
+
+  function renderDrinksManage() {
+    var container = document.getElementById('drinks-manage');
+    var html = '';
+    for (var i = 0; i < state.drinks.length; i++) {
+      var d = state.drinks[i];
+      html += '<div class="drink-manage-row">'
+        + '<span>' + d.emoji + ' ' + escapeHtml(d.name) + '</span>'
+        + '<span class="drink-points-badge">' + d.points + ' Pkt</span>'
+        + '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderLocationStatus() {
+    var el = document.getElementById('location-status');
+    if (state.pubLocation) {
+      el.textContent = 'Standort gespeichert (' + state.pubLocation.lat.toFixed(4) + ', ' + state.pubLocation.lng.toFixed(4) + ')';
+    } else {
+      el.textContent = 'Kein Standort gespeichert';
+    }
+  }
+
+  function addMember() {
+    var input = document.getElementById('input-new-member');
+    var name = input.value.trim();
+    if (!name) return;
+
+    state.members.push({
+      id: uuid(),
+      name: name,
+      avatar: AVATARS[state.members.length % AVATARS.length],
+    });
+
+    saveState();
+    input.value = '';
+    renderMembersList();
+    showToast(name + ' hinzugefügt!');
+  }
+
+  function removeMember(id) {
+    var member = findMember(id);
+    if (!member) return;
+    if (!confirm(member.name + ' wirklich entfernen?')) return;
+
+    state.members = state.members.filter(function (m) { return m.id !== id; });
+    state.checkedIn = state.checkedIn.filter(function (cid) { return cid !== id; });
+    saveState();
+    renderMembersList();
+    showToast(member.name + ' entfernt');
+  }
+
+  function setEvent() {
+    var name = document.getElementById('input-event-name').value.trim();
+    var date = document.getElementById('input-event-date').value;
+
+    if (!date) {
+      showToast('Bitte Datum auswählen!');
+      return;
+    }
+
+    state.event = { name: name || 'Pub-Abend', date: date };
+    saveState();
+    renderCountdown();
+    showToast('Termin gesetzt!');
+  }
+
+  function setLocation() {
+    if (!navigator.geolocation) {
+      showToast('Geolocation nicht verfügbar');
+      return;
+    }
+
+    showToast('Ermittle Standort...');
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        state.pubLocation = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        saveState();
+        renderLocationStatus();
+        showToast('Standort gespeichert!');
+      },
+      function () {
+        showToast('Standort konnte nicht ermittelt werden');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  function resetData() {
+    if (!confirm('Wirklich ALLE Daten löschen?')) return;
+    if (!confirm('Bist du sicher? Alle Getränke, Mitglieder und Termine werden gelöscht.')) return;
+
+    localStorage.removeItem('winchester-state');
+    state = {
+      members: [],
+      drinks: DEFAULT_DRINKS.map(function (d) { return Object.assign({}, d); }),
+      log: [],
+      event: null,
+      pubLocation: null,
+      checkedIn: [],
+    };
+    selectedMemberId = null;
+    selectedDrinkId = null;
+    if (countdownInterval) clearInterval(countdownInterval);
+    renderSettings();
+    renderHome();
+    showToast('Alle Daten gelöscht');
+  }
+
+  // ==========================================
+  //  GEOLOCATION PROXIMITY CHECK
+  // ==========================================
+  function checkProximity() {
+    if (!state.pubLocation || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var dist = haversineDistance(
+          pos.coords.latitude, pos.coords.longitude,
+          state.pubLocation.lat, state.pubLocation.lng
+        );
+        if (dist < 200) {
+          showGeoBanner();
+        }
+      },
+      function () { /* silent fail */ },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    var R = 6371e3;
+    var toRad = Math.PI / 180;
+    var dLat = (lat2 - lat1) * toRad;
+    var dLon = (lon2 - lon1) * toRad;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad)
+      * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function showGeoBanner() {
+    document.getElementById('geo-banner').classList.add('show');
+  }
+
+  function dismissGeoBanner() {
+    document.getElementById('geo-banner').classList.remove('show');
+  }
+
+  // ==========================================
+  //  HELPERS
+  // ==========================================
+  function findMember(id) {
+    for (var i = 0; i < state.members.length; i++) {
+      if (state.members[i].id === id) return state.members[i];
+    }
+    return null;
+  }
+
+  function findDrink(id) {
+    for (var i = 0; i < state.drinks.length; i++) {
+      if (state.drinks[i].id === id) return state.drinks[i];
+    }
+    return null;
+  }
+
+  // ==========================================
+  //  PUBLIC API (for onclick handlers)
+  // ==========================================
+  window.app = {
+    openCheckIn: openCheckIn,
+    closeCheckInModal: closeCheckInModal,
+    addDrink: addDrink,
+    addMember: addMember,
+    setEvent: setEvent,
+    setLocation: setLocation,
+    resetData: resetData,
+    dismissGeoBanner: dismissGeoBanner,
+    goToSettings: function () { navigateTo('settings'); },
+  };
+
+  // ==========================================
+  //  INIT
+  // ==========================================
+  function init() {
+    loadState();
+    initNavigation();
+    renderHome();
+
+    // Check proximity after short delay
+    setTimeout(checkProximity, 2000);
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function (err) {
+        console.error('SW registration failed:', err);
+      });
+    }
+
+    // Enter key for member input
+    var memberInput = document.getElementById('input-new-member');
+    memberInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') addMember();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
