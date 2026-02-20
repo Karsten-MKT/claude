@@ -7,16 +7,16 @@
 
   // --- Default Drinks ---
   const DEFAULT_DRINKS = [
-    { id: 'guinness', name: 'Guinness', emoji: '🍺', points: 2 },
-    { id: 'kilkenny', name: 'Kilkenny', emoji: '🍺', points: 2 },
-    { id: 'beer', name: 'Bier', emoji: '🍻', points: 1 },
-    { id: 'whiskey', name: 'Whiskey', emoji: '🥃', points: 3 },
-    { id: 'irishcoffee', name: 'Irish Coffee', emoji: '☕', points: 2 },
-    { id: 'cider', name: 'Cider', emoji: '🍎', points: 1 },
-    { id: 'shot', name: 'Shot', emoji: '🥃', points: 3 },
-    { id: 'jgl', name: 'JGL', emoji: '🍹', points: 2 },
-    { id: 'wine', name: 'Wein', emoji: '🍷', points: 1 },
-    { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 0.5 },
+    { id: 'guinness', name: 'Guinness', emoji: '🍺', points: 3 },
+    { id: 'kilkenny', name: 'Kilkenny', emoji: '🍺', points: 3 },
+    { id: 'beer', name: 'Bier', emoji: '🍻', points: 2 },
+    { id: 'whiskey', name: 'Whiskey', emoji: '🥃', points: 4 },
+    { id: 'irishcoffee', name: 'Irish Coffee', emoji: '☕', points: 3 },
+    { id: 'cider', name: 'Cider', emoji: '🍎', points: 2 },
+    { id: 'shot', name: 'Shot', emoji: '🥃', points: 4 },
+    { id: 'jgl', name: 'JGL', emoji: '🍹', points: 3 },
+    { id: 'wine', name: 'Wein', emoji: '🍷', points: 2 },
+    { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 1 },
   ];
 
   const AVATARS = [
@@ -159,10 +159,12 @@
           }
         }
 
-        // Migrate: softdrink points 0 -> 0.5
+        // Migrate: increase all drink points by 1 (softdrink 0->1, beer 1->2, etc.)
+        var newPoints = { guinness: 3, kilkenny: 3, beer: 2, whiskey: 4, irishcoffee: 3, cider: 2, shot: 4, jgl: 3, wine: 2, softdrink: 1 };
         for (var d = 0; d < state.drinks.length; d++) {
-          if (state.drinks[d].id === 'softdrink' && state.drinks[d].points === 0) {
-            state.drinks[d].points = 0.5;
+          var np = newPoints[state.drinks[d].id];
+          if (np !== undefined && state.drinks[d].points < np) {
+            state.drinks[d].points = np;
           }
         }
       }
