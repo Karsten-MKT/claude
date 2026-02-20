@@ -1,4 +1,4 @@
-const CACHE_NAME = 'winchester-v5';
+const CACHE_NAME = 'winchester-v6';
 const ASSETS = [
   './',
   './index.html',
