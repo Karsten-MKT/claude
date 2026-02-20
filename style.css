@@ -619,11 +619,76 @@ body {
 .member-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 10px 12px;
   background: var(--bg);
   border-radius: var(--radius-sm);
   font-size: 15px;
+  gap: 10px;
+}
+
+.member-avatar-btn {
+  background: none;
+  border: 2px solid transparent;
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 2px 4px;
+  transition: all 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.member-avatar-btn:hover {
+  border-color: var(--gold-dark);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.member-name-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Emoji Picker ===== */
+.emoji-picker,
+.member-emoji-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.member-emoji-picker {
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+}
+
+.emoji-option {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--bg-card);
+  border: 2px solid var(--bg-card-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.emoji-option.selected {
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.15);
+  transform: scale(1.1);
+}
+
+.emoji-option:active {
+  transform: scale(0.9);
 }
 
 .add-row {

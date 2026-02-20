@@ -16,10 +16,14 @@
     { id: 'shot', name: 'Shot', emoji: '🥃', points: 3 },
     { id: 'jgl', name: 'JGL', emoji: '🍹', points: 2 },
     { id: 'wine', name: 'Wein', emoji: '🍷', points: 1 },
-    { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 0 },
+    { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 0.5 },
   ];
 
-  const AVATARS = ['🧔', '👨', '👩', '🧑', '👴', '👵', '🤠', '🧛', '🧙', '🎅'];
+  const AVATARS = [
+    '😀', '😎', '🤩', '🥳', '😇', '🤓', '🧐', '😈',
+    '👻', '🤠', '🥸', '🤖', '👽', '🧔', '👨', '👩',
+    '🧑', '👴', '👵', '🧛', '🧙', '🎅', '🤴', '👸',
+  ];
 
   // --- State ---
   var state = {
@@ -34,6 +38,8 @@
   var selectedMemberId = null;
   var selectedDrinkId = null;
   var countdownInterval = null;
+  var selectedAvatar = AVATARS[0];
+  var editingMemberEmoji = null;
 
   // ==========================================
   //  FIREBASE CONFIG
@@ -141,6 +147,24 @@
             state.log[j].drinkName = 'JGL';
           }
         }
+
+        // Migrate: add memberName/memberAvatar to old log entries
+        for (var k = 0; k < state.log.length; k++) {
+          if (!state.log[k].memberName) {
+            var logMember = findMember(state.log[k].memberId);
+            if (logMember) {
+              state.log[k].memberName = logMember.name;
+              state.log[k].memberAvatar = logMember.avatar;
+            }
+          }
+        }
+
+        // Migrate: softdrink points 0 -> 0.5
+        for (var d = 0; d < state.drinks.length; d++) {
+          if (state.drinks[d].id === 'softdrink' && state.drinks[d].points === 0) {
+            state.drinks[d].points = 0.5;
+          }
+        }
       }
     } catch (e) {
       console.error('Load error:', e);
@@ -166,6 +190,19 @@
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // --- Guinness Icon ---
+  var GUINNESS_SVG = '<svg viewBox="0 0 32 44" width="28" height="36" style="vertical-align:middle;display:inline-block">'
+    + '<path d="M6,10 L4,36 Q4,42 10,42 L22,42 Q28,42 28,36 L26,10Z" fill="#0a0000"/>'
+    + '<path d="M6,10 L4,36 Q4,42 10,42 L22,42 Q28,42 28,36 L26,10Z" fill="none" stroke="#8b6914" stroke-width="1"/>'
+    + '<path d="M6,10 Q6,4 16,4 Q26,4 26,10 L26,16 Q16,19 6,16Z" fill="#f5e0b8"/>'
+    + '<ellipse cx="16" cy="6" rx="9" ry="3" fill="#fffaf0" opacity="0.5"/>'
+    + '</svg>';
+
+  function getDrinkIcon(drink) {
+    if (drink && drink.id === 'guinness') return GUINNESS_SVG;
+    return drink ? drink.emoji : '';
   }
 
   // --- Toast ---
@@ -366,39 +403,38 @@
   function renderLeaderboard() {
     var container = document.getElementById('leaderboard-list');
 
-    if (state.members.length === 0 || state.log.length === 0) {
+    if (state.log.length === 0) {
       container.innerHTML = '<p class="empty-state">Noch keine Einträge.<br>Füge Stammgäste hinzu und tracke Getränke!</p>';
       return;
     }
 
-    // Build board
+    // Build board from log entries (persists even for deleted members)
     var board = {};
-    for (var i = 0; i < state.members.length; i++) {
-      var m = state.members[i];
-      board[m.id] = { member: m, totalPoints: 0, totalDrinks: 0, drinkCounts: {} };
-    }
-
     for (var j = 0; j < state.log.length; j++) {
       var entry = state.log[j];
-      if (board[entry.memberId]) {
-        board[entry.memberId].totalPoints += entry.points;
-        board[entry.memberId].totalDrinks += 1;
-        var dn = entry.drinkName || entry.drinkId;
-        board[entry.memberId].drinkCounts[dn] = (board[entry.memberId].drinkCounts[dn] || 0) + 1;
+      var mid = entry.memberId;
+      if (!board[mid]) {
+        var member = findMember(mid);
+        board[mid] = {
+          name: member ? member.name : (entry.memberName || 'Ehemaliger Gast'),
+          avatar: member ? member.avatar : (entry.memberAvatar || '👤'),
+          totalPoints: 0,
+          totalDrinks: 0,
+          drinkCounts: {}
+        };
       }
+      board[mid].totalPoints += entry.points;
+      board[mid].totalDrinks += 1;
+      var dn = entry.drinkName || entry.drinkId;
+      board[mid].drinkCounts[dn] = (board[mid].drinkCounts[dn] || 0) + 1;
     }
 
     // Sort
     var sorted = [];
     for (var id in board) {
-      if (board[id].totalDrinks > 0) sorted.push(board[id]);
+      sorted.push(board[id]);
     }
     sorted.sort(function (a, b) { return b.totalPoints - a.totalPoints; });
-
-    if (sorted.length === 0) {
-      container.innerHTML = '<p class="empty-state">Noch keine Getränke getrackt!</p>';
-      return;
-    }
 
     var medals = ['🥇', '🥈', '🥉'];
     var html = '';
@@ -414,7 +450,7 @@
       html += '<div class="leaderboard-entry' + rankClass + '">'
         + '<div class="rank">' + (k < 3 ? medals[k] : (k + 1)) + '</div>'
         + '<div class="entry-info">'
-        + '<div class="entry-name">' + e.member.avatar + ' ' + escapeHtml(e.member.name) + '</div>'
+        + '<div class="entry-name">' + e.avatar + ' ' + escapeHtml(e.name) + '</div>'
         + '<div class="entry-drinks">' + escapeHtml(summary) + '</div>'
         + '</div>'
         + '<div class="entry-points">'
@@ -462,12 +498,13 @@
 
   function renderDrinkGrid() {
     var container = document.getElementById('drink-select');
+    var sortedDrinks = state.drinks.slice().sort(function (a, b) { return b.points - a.points; });
     var html = '';
-    for (var i = 0; i < state.drinks.length; i++) {
-      var d = state.drinks[i];
+    for (var i = 0; i < sortedDrinks.length; i++) {
+      var d = sortedDrinks[i];
       var sel = selectedDrinkId === d.id ? ' selected' : '';
       html += '<button class="drink-card' + sel + '" data-id="' + d.id + '">'
-        + '<span class="drink-emoji">' + d.emoji + '</span>'
+        + '<span class="drink-emoji">' + getDrinkIcon(d) + '</span>'
         + '<span class="drink-name">' + escapeHtml(d.name) + '</span>'
         + '<span class="drink-points">' + d.points + ' Pkt</span>'
         + '</button>';
@@ -498,8 +535,8 @@
       var drink = findDrink(entry.drinkId);
       var time = new Date(entry.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
       html += '<div class="recent-entry">'
-        + '<span>' + (member ? member.avatar + ' ' + escapeHtml(member.name) : 'Unbekannt') + '</span>'
-        + '<span>' + (drink ? drink.emoji + ' ' : '') + escapeHtml(entry.drinkName || 'Unbekannt') + '</span>'
+        + '<span>' + (member ? member.avatar + ' ' + escapeHtml(member.name) : (entry.memberAvatar || '👤') + ' ' + escapeHtml(entry.memberName || 'Unbekannt')) + '</span>'
+        + '<span>' + getDrinkIcon(drink || { id: entry.drinkId, emoji: '' }) + ' ' + escapeHtml(entry.drinkName || 'Unbekannt') + '</span>'
         + '<span class="time">' + time + '</span>'
         + '</div>';
     }
@@ -531,6 +568,8 @@
     state.log.push({
       id: uuid(),
       memberId: member.id,
+      memberName: member.name,
+      memberAvatar: member.avatar,
       drinkId: drink.id,
       drinkName: drink.name,
       points: drink.points,
@@ -554,6 +593,7 @@
   // ==========================================
   function renderSettings() {
     renderMembersList();
+    renderNewMemberEmojiPicker();
     renderDrinksManage();
     renderLocationStatus();
 
@@ -573,11 +613,38 @@
     for (var i = 0; i < state.members.length; i++) {
       var m = state.members[i];
       html += '<div class="member-row">'
-        + '<span>' + m.avatar + ' ' + escapeHtml(m.name) + '</span>'
+        + '<button class="member-avatar-btn" data-id="' + m.id + '" title="Emoji ändern">' + m.avatar + '</button>'
+        + '<span class="member-name-text">' + escapeHtml(m.name) + '</span>'
         + '<button class="btn-icon btn-delete" data-id="' + m.id + '" title="Entfernen">✕</button>'
         + '</div>';
+      if (editingMemberEmoji === m.id) {
+        html += '<div class="member-emoji-picker">';
+        for (var a = 0; a < AVATARS.length; a++) {
+          var selClass = AVATARS[a] === m.avatar ? ' selected' : '';
+          html += '<button class="emoji-option' + selClass + '" data-member-id="' + m.id + '" data-emoji="' + AVATARS[a] + '">' + AVATARS[a] + '</button>';
+        }
+        html += '</div>';
+      }
     }
     container.innerHTML = html;
+
+    var avatarBtns = container.querySelectorAll('.member-avatar-btn');
+    for (var k = 0; k < avatarBtns.length; k++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          toggleMemberEmojiPicker(btn.getAttribute('data-id'));
+        });
+      })(avatarBtns[k]);
+    }
+
+    var emojiOpts = container.querySelectorAll('.member-emoji-picker .emoji-option');
+    for (var e = 0; e < emojiOpts.length; e++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          changeMemberEmoji(btn.getAttribute('data-member-id'), btn.getAttribute('data-emoji'));
+        });
+      })(emojiOpts[e]);
+    }
 
     var delBtns = container.querySelectorAll('.btn-delete');
     for (var j = 0; j < delBtns.length; j++) {
@@ -589,13 +656,29 @@
     }
   }
 
+  function toggleMemberEmojiPicker(memberId) {
+    editingMemberEmoji = editingMemberEmoji === memberId ? null : memberId;
+    renderMembersList();
+  }
+
+  function changeMemberEmoji(memberId, emoji) {
+    var member = findMember(memberId);
+    if (member) {
+      member.avatar = emoji;
+      editingMemberEmoji = null;
+      saveState();
+      renderMembersList();
+    }
+  }
+
   function renderDrinksManage() {
     var container = document.getElementById('drinks-manage');
+    var sorted = state.drinks.slice().sort(function (a, b) { return b.points - a.points; });
     var html = '';
-    for (var i = 0; i < state.drinks.length; i++) {
-      var d = state.drinks[i];
+    for (var i = 0; i < sorted.length; i++) {
+      var d = sorted[i];
       html += '<div class="drink-manage-row">'
-        + '<span>' + d.emoji + ' ' + escapeHtml(d.name) + '</span>'
+        + '<span>' + getDrinkIcon(d) + ' ' + escapeHtml(d.name) + '</span>'
         + '<span class="drink-points-badge">' + d.points + ' Pkt</span>'
         + '</div>';
     }
@@ -611,6 +694,27 @@
     }
   }
 
+  function renderNewMemberEmojiPicker() {
+    var container = document.getElementById('emoji-picker-new');
+    if (!container) return;
+    var html = '';
+    for (var i = 0; i < AVATARS.length; i++) {
+      var selClass = AVATARS[i] === selectedAvatar ? ' selected' : '';
+      html += '<button class="emoji-option' + selClass + '" data-emoji="' + AVATARS[i] + '">' + AVATARS[i] + '</button>';
+    }
+    container.innerHTML = html;
+
+    var opts = container.querySelectorAll('.emoji-option');
+    for (var j = 0; j < opts.length; j++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          selectedAvatar = btn.getAttribute('data-emoji');
+          renderNewMemberEmojiPicker();
+        });
+      })(opts[j]);
+    }
+  }
+
   function addMember() {
     var input = document.getElementById('input-new-member');
     var name = input.value.trim();
@@ -619,12 +723,14 @@
     state.members.push({
       id: uuid(),
       name: name,
-      avatar: AVATARS[state.members.length % AVATARS.length],
+      avatar: selectedAvatar || AVATARS[0],
     });
 
     saveState();
     input.value = '';
+    selectedAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
     renderMembersList();
+    renderNewMemberEmojiPicker();
     showToast(name + ' hinzugefügt!');
   }
 
