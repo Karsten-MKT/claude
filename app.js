@@ -192,7 +192,7 @@
     return div.innerHTML;
   }
 
-  // --- Guinness Icon ---
+  // --- Custom Drink Icons ---
   var GUINNESS_SVG = '<svg viewBox="0 0 32 44" width="28" height="36" style="vertical-align:middle;display:inline-block">'
     + '<path d="M6,10 L4,36 Q4,42 10,42 L22,42 Q28,42 28,36 L26,10Z" fill="#0a0000"/>'
     + '<path d="M6,10 L4,36 Q4,42 10,42 L22,42 Q28,42 28,36 L26,10Z" fill="none" stroke="#8b6914" stroke-width="1"/>'
@@ -200,9 +200,25 @@
     + '<ellipse cx="16" cy="6" rx="9" ry="3" fill="#fffaf0" opacity="0.5"/>'
     + '</svg>';
 
+  var WHISKEY_SVG = '<svg viewBox="0 0 32 34" width="28" height="30" style="vertical-align:middle;display:inline-block">'
+    + '<path d="M5,4 L3,26 Q3,32 9,32 L23,32 Q29,32 29,26 L27,4Z" fill="none" stroke="#9a9a9a" stroke-width="1.2" opacity="0.6"/>'
+    + '<path d="M6,14 L4,26 Q4,31 9,31 L23,31 Q28,31 28,26 L26,14Z" fill="#d4881e"/>'
+    + '<path d="M6,14 L26,14" stroke="#e8a030" stroke-width="0.8" opacity="0.6"/>'
+    + '<path d="M9,4 L9,28" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>'
+    + '</svg>';
+
+  var SHOT_SVG = '<svg viewBox="0 0 24 34" width="22" height="30" style="vertical-align:middle;display:inline-block">'
+    + '<path d="M5,4 L4,26 Q4,32 8,32 L16,32 Q20,32 20,26 L19,4Z" fill="none" stroke="#9a9a9a" stroke-width="1.2" opacity="0.6"/>'
+    + '<path d="M5,12 L4,26 Q4,31 8,31 L16,31 Q20,31 20,26 L19,12Z" fill="#d4881e"/>'
+    + '<path d="M5,12 L19,12" stroke="#e8a030" stroke-width="0.8" opacity="0.6"/>'
+    + '</svg>';
+
   function getDrinkIcon(drink) {
-    if (drink && drink.id === 'guinness') return GUINNESS_SVG;
-    return drink ? drink.emoji : '';
+    if (!drink) return '';
+    if (drink.id === 'guinness') return GUINNESS_SVG;
+    if (drink.id === 'whiskey') return WHISKEY_SVG;
+    if (drink.id === 'shot') return SHOT_SVG;
+    return drink.emoji;
   }
 
   // --- Toast ---
