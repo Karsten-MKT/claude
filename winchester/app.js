@@ -352,6 +352,7 @@
       document.getElementById('cd-minutes').textContent = '00';
       document.getElementById('cd-seconds').textContent = '00';
       if (countdownInterval) clearInterval(countdownInterval);
+      showCountdownExpired();
       return;
     }
 
@@ -368,6 +369,57 @@
 
   function pad(n) {
     return n < 10 ? '0' + n : '' + n;
+  }
+
+  var countdownExpiredFired = false;
+
+  function showCountdownExpired() {
+    if (countdownExpiredFired) return;
+    countdownExpiredFired = true;
+
+    // Show expired message overlay on countdown card
+    var display = document.getElementById('countdown-display');
+    var overlay = document.getElementById('countdown-expired-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      display.style.opacity = '0.3';
+    }
+
+    // Play notification chime via Web Audio API
+    playNotificationChime();
+
+    // Show toast
+    var eventName = (state.event && state.event.name) ? state.event.name : 'Pub-Abend';
+    showToast('🍻 ' + eventName + ' — Es geht los!', 5000);
+  }
+
+  function playNotificationChime() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      notes.forEach(function (freq, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+      });
+    } catch (e) {
+      // Audio not supported — silent fallback
+    }
+  }
+
+  function resetCountdownExpired() {
+    countdownExpiredFired = false;
+    var overlay = document.getElementById('countdown-expired-overlay');
+    var display = document.getElementById('countdown-display');
+    if (overlay) overlay.style.display = 'none';
+    if (display) display.style.opacity = '1';
   }
 
   // ==========================================
@@ -784,6 +836,7 @@
     }
 
     state.event = { name: name || 'Pub-Abend', date: date };
+    resetCountdownExpired();
     saveState();
     renderCountdown();
     showToast('Termin gesetzt!');
