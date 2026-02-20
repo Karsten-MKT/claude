@@ -100,6 +100,9 @@
       state.checkedIn = data.checkedIn || [];
       if (data.drinks && data.drinks.length > 0) {
         state.drinks = data.drinks;
+        if (migrateDrinkPoints()) {
+          syncToFirebase();
+        }
       }
       saveLocal();
       renderAll();
@@ -118,6 +121,19 @@
   function saveState() {
     saveLocal();
     syncToFirebase();
+  }
+
+  function migrateDrinkPoints() {
+    var newPoints = { guinness: 3, kilkenny: 3, beer: 2, whiskey: 4, irishcoffee: 3, cider: 2, shot: 4, jgl: 3, wine: 2, softdrink: 1 };
+    var changed = false;
+    for (var d = 0; d < state.drinks.length; d++) {
+      var np = newPoints[state.drinks[d].id];
+      if (np !== undefined && state.drinks[d].points < np) {
+        state.drinks[d].points = np;
+        changed = true;
+      }
+    }
+    return changed;
   }
 
   function loadState() {
@@ -160,13 +176,7 @@
         }
 
         // Migrate: increase all drink points by 1 (softdrink 0->1, beer 1->2, etc.)
-        var newPoints = { guinness: 3, kilkenny: 3, beer: 2, whiskey: 4, irishcoffee: 3, cider: 2, shot: 4, jgl: 3, wine: 2, softdrink: 1 };
-        for (var d = 0; d < state.drinks.length; d++) {
-          var np = newPoints[state.drinks[d].id];
-          if (np !== undefined && state.drinks[d].points < np) {
-            state.drinks[d].points = np;
-          }
-        }
+        migrateDrinkPoints();
       }
     } catch (e) {
       console.error('Load error:', e);
