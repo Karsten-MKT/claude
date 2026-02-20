@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kalorien">
+  <meta name="theme-color" content="#FAF7F2">
+  <meta name="description" content="Kalorien &amp; Nährstoff Tracker mit Foto-Erfassung">
+  <title>Kalorien Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header id="app-header">
+    <h1>Kalorien Tracker</h1>
+    <span class="header-sub" id="header-date"></span>
+  </header>
+
+  <!-- Pages -->
+  <main id="app-main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <section id="page-dashboard" class="page active">
+
+      <!-- Deficit/Surplus Banner -->
+      <div id="deficit-banner" class="deficit-banner deficit">
+        <div class="deficit-icon" id="deficit-icon">🔥</div>
+        <div class="deficit-text">
+          <span id="deficit-label" class="deficit-label">Kaloriendefizit</span>
+          <span id="deficit-value" class="deficit-value">2000 kcal übrig</span>
+        </div>
+      </div>
+
+      <!-- Calorie Ring -->
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 160 160">
+          <circle class="ring-bg" cx="80" cy="80" r="68" />
+          <circle class="ring-fill" id="ring-fill" cx="80" cy="80" r="68" />
+        </svg>
+        <div class="ring-center">
+          <span class="ring-number" id="ring-consumed">0</span>
+          <span class="ring-label">von <span id="ring-goal">2000</span> kcal</span>
+        </div>
+      </div>
+
+      <!-- Macro Bars -->
+      <div class="macros-row">
+        <div class="macro-item">
+          <div class="macro-header">
+            <span class="macro-name">Protein</span>
+            <span class="macro-value" id="macro-protein">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-fill protein" id="bar-protein"></div></div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-header">
+            <span class="macro-name">Kohlenhydrate</span>
+            <span class="macro-value" id="macro-carbs">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-fill carbs" id="bar-carbs"></div></div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-header">
+            <span class="macro-name">Fett</span>
+            <span class="macro-value" id="macro-fat">0g</span>
+          </div>
+          <div class="macro-bar"><div class="macro-fill fat" id="bar-fat"></div></div>
+        </div>
+      </div>
+
+      <!-- Today's Meals -->
+      <div class="section-header">
+        <h2>Heutige Mahlzeiten</h2>
+      </div>
+      <div id="meals-today" class="meals-list">
+        <div class="empty-state">
+          <span class="empty-icon">📷</span>
+          <p>Fotografiere dein Essen, um zu starten</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== ADD MEAL ===== -->
+    <section id="page-add" class="page">
+      <h2 class="page-title">Mahlzeit erfassen</h2>
+
+      <!-- Photo Section -->
+      <div class="photo-section">
+        <div id="photo-preview" class="photo-preview" onclick="app.takePhoto()">
+          <span class="photo-placeholder-icon">📷</span>
+          <span class="photo-placeholder-text">Foto aufnehmen</span>
+        </div>
+        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="gallery-input" accept="image/*" style="display:none">
+        <div class="photo-actions">
+          <button class="btn btn-outline" onclick="app.takePhoto()">Kamera</button>
+          <button class="btn btn-outline" onclick="app.pickPhoto()">Galerie</button>
+        </div>
+      </div>
+
+      <!-- Meal Category -->
+      <div class="card">
+        <label class="field-label">Kategorie</label>
+        <div id="meal-type-select" class="type-chips"></div>
+      </div>
+
+      <!-- Meal Details -->
+      <div class="card">
+        <label class="field-label">Bezeichnung</label>
+        <input type="text" id="input-meal-name" placeholder="z.B. Avocado Toast" class="input" maxlength="60">
+
+        <div class="nutrient-grid">
+          <div class="nutrient-field">
+            <label class="field-label">Kalorien</label>
+            <div class="input-unit">
+              <input type="number" id="input-cal" placeholder="0" class="input" min="0" max="9999" inputmode="numeric">
+              <span class="unit">kcal</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Protein</label>
+            <div class="input-unit">
+              <input type="number" id="input-protein" placeholder="0" class="input" min="0" max="999" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Kohlenhydrate</label>
+            <div class="input-unit">
+              <input type="number" id="input-carbs" placeholder="0" class="input" min="0" max="999" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Fett</label>
+            <div class="input-unit">
+              <input type="number" id="input-fat" placeholder="0" class="input" min="0" max="999" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-large" onclick="app.addMeal()">Mahlzeit speichern</button>
+      </div>
+
+      <!-- Quick Add -->
+      <div class="card">
+        <h3>Schnellauswahl</h3>
+        <div id="quick-add" class="quick-grid"></div>
+      </div>
+    </section>
+
+    <!-- ===== HISTORY ===== -->
+    <section id="page-history" class="page">
+      <h2 class="page-title">Verlauf</h2>
+      <div id="history-list" class="history-list">
+        <div class="empty-state">
+          <span class="empty-icon">📊</span>
+          <p>Noch keine Einträge</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section id="page-settings" class="page">
+      <h2 class="page-title">Einstellungen</h2>
+
+      <div class="card">
+        <h3>Tagesziele</h3>
+        <div class="nutrient-grid">
+          <div class="nutrient-field">
+            <label class="field-label">Kalorien</label>
+            <div class="input-unit">
+              <input type="number" id="input-goal-cal" placeholder="2000" class="input" min="500" max="10000" inputmode="numeric">
+              <span class="unit">kcal</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Protein</label>
+            <div class="input-unit">
+              <input type="number" id="input-goal-protein" placeholder="120" class="input" min="0" max="500" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Kohlenhydrate</label>
+            <div class="input-unit">
+              <input type="number" id="input-goal-carbs" placeholder="250" class="input" min="0" max="1000" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+          <div class="nutrient-field">
+            <label class="field-label">Fett</label>
+            <div class="input-unit">
+              <input type="number" id="input-goal-fat" placeholder="65" class="input" min="0" max="500" inputmode="numeric">
+              <span class="unit">g</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="app.saveGoals()">Ziele speichern</button>
+      </div>
+
+      <div class="card">
+        <h3>Schnellauswahl bearbeiten</h3>
+        <div id="favorites-list" class="favorites-manage"></div>
+        <div class="add-fav-form">
+          <input type="text" id="input-fav-name" placeholder="Name" class="input" maxlength="30">
+          <div class="add-fav-row">
+            <input type="number" id="input-fav-cal" placeholder="kcal" class="input input-sm" inputmode="numeric">
+            <input type="number" id="input-fav-protein" placeholder="Prot." class="input input-sm" inputmode="numeric">
+            <input type="number" id="input-fav-carbs" placeholder="Carbs" class="input input-sm" inputmode="numeric">
+            <input type="number" id="input-fav-fat" placeholder="Fett" class="input input-sm" inputmode="numeric">
+          </div>
+          <button class="btn btn-outline" onclick="app.addFavorite()">Favorit hinzufügen</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Daten</h3>
+        <button class="btn btn-danger" onclick="app.resetData()">Alle Daten löschen</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-page="dashboard">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" data-page="add">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+      <span>Erfassen</span>
+    </button>
+    <button class="nav-btn" data-page="history">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+      <span>Verlauf</span>
+    </button>
+    <button class="nav-btn" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+      <span>Mehr</span>
+    </button>
+  </nav>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Meal Detail Modal -->
+  <div id="meal-modal" class="modal">
+    <div class="modal-content">
+      <div id="modal-photo" class="modal-photo"></div>
+      <h3 id="modal-title"></h3>
+      <div id="modal-nutrients" class="modal-nutrients"></div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="modal-delete">Löschen</button>
+        <button class="btn btn-outline" onclick="app.closeModal()">Schliessen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

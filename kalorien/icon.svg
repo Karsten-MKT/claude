@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#FAF7F2"/>
+  <rect x="8" y="8" width="496" height="496" rx="92" fill="none" stroke="#EDE8E0" stroke-width="4"/>
+  <circle cx="256" cy="230" r="120" fill="none" stroke="#EDE8E0" stroke-width="14"/>
+  <circle cx="256" cy="230" r="120" fill="none" stroke="#5CB85C" stroke-width="14" stroke-dasharray="377 377" stroke-dashoffset="94" stroke-linecap="round" transform="rotate(-90 256 230)"/>
+  <text x="256" y="220" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="48" font-weight="800" fill="#2D2A26">kcal</text>
+  <text x="256" y="260" text-anchor="middle" font-family="-apple-system,sans-serif" font-size="22" fill="#B5AFA5">tracker</text>
+  <text x="256" y="420" text-anchor="middle" font-size="72">🔥</text>
+</svg>

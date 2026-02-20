@@ -1,0 +1,20 @@
+{
+  "name": "Kalorien Tracker",
+  "short_name": "Kalorien",
+  "description": "Kalorien & Nährstoff Tracker mit Foto-Erfassung",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#FAF7F2",
+  "orientation": "portrait",
+  "categories": ["health", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
