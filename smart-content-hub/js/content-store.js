@@ -166,7 +166,7 @@ const CONTENT_STORE = {
       title: "IT-Strategie trifft Business-Ziele (Teil 1): Warum Business-IT-Alignment oft scheitert",
       date: "2025-10-09",
       author: "Olaf Terhorst",
-      summary: "Erster Teil einer Serie zur IT-Strategie: Warum „Business-IT-Alignment" in der Praxis oft an strukturellen Gräben und kulturellen Unterschieden scheitert.",
+      summary: "Erster Teil einer Serie zur IT-Strategie: Warum 'Business-IT-Alignment' in der Praxis oft an strukturellen Gr\u00e4ben und kulturellen Unterschieden scheitert.",
       url: "https://insights.mgm-tp.com/de/category/consulting-de/"
     },
     {
@@ -201,7 +201,7 @@ const CONTENT_STORE = {
       title: "DSAG Jahreskongress 2025",
       date: "2025-09-16",
       author: "Karsten Kneese",
-      summary: "Bericht vom Jahreskongress der SAP-Community in Bremen unter dem Motto „Die Kunst der Balance".",
+      summary: "Bericht vom Jahreskongress der SAP-Community in Bremen unter dem Motto 'Die Kunst der Balance'.",
       url: "https://insights.mgm-tp.com/de/category/consulting-de/"
     },
     {
