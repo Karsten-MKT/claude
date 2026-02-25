@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#007900"/>
+      <stop offset="100%" stop-color="#005c00"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- Chat bubble -->
+  <rect x="28" y="32" width="72" height="48" rx="10" fill="#fff" opacity="0.95"/>
+  <polygon points="40,80 36,94 54,80" fill="#fff" opacity="0.95"/>
+  <!-- Dots -->
+  <circle cx="48" cy="56" r="5" fill="#007900"/>
+  <circle cx="64" cy="56" r="5" fill="#CD3D7A"/>
+  <circle cx="80" cy="56" r="5" fill="#007900"/>
+</svg>
