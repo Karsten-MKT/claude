@@ -272,8 +272,8 @@
       } catch (err) {
         console.error("Smart Content Hub error:", err);
         addMessage(
-          "Entschuldigung, bei der Verarbeitung Ihrer Frage ist ein Fehler aufgetreten. " +
-          "Bitte versuchen Sie es mit einer anderen Formulierung oder wählen Sie ein Thema aus der Seitenleiste.",
+          "<strong>Debug-Info:</strong> " + escapeHtml(err.message) +
+          "<br><br><em>Dieser Fehler wird nach dem Debugging entfernt.</em>",
           "assistant"
         );
       }
@@ -299,10 +299,18 @@
 
   // ── Welcome message ──────────────────────────────
 
-  addMessage(
-    "Willkommen beim <strong>Smart Content Hub</strong> von mgm consulting partners!<br><br>" +
-    "Ich bin Ihr KI-Assistent und beantworte Fragen zu unseren Leistungen, Kompetenzen und aktuellen Consulting-Insights.<br><br>" +
-    "Wählen Sie ein Thema aus der Seitenleiste oder stellen Sie mir direkt eine Frage.",
-    "assistant"
-  );
+  if (typeof CONTENT_STORE === "undefined") {
+    addMessage(
+      "<strong>Fehler:</strong> Die Wissensdatenbank (content-store.js) konnte nicht geladen werden. " +
+      "Bitte laden Sie die Seite neu (Strg+Shift+R).",
+      "assistant"
+    );
+  } else {
+    addMessage(
+      "Willkommen beim <strong>Smart Content Hub</strong> von mgm consulting partners!<br><br>" +
+      "Ich bin Ihr KI-Assistent und beantworte Fragen zu unseren Leistungen, Kompetenzen und aktuellen Consulting-Insights.<br><br>" +
+      "Wählen Sie ein Thema aus der Seitenleiste oder stellen Sie mir direkt eine Frage.",
+      "assistant"
+    );
+  }
 })();
