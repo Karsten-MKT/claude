@@ -62,7 +62,7 @@
   function matchesAny(input, keywords) {
     const n = normalise(input);
     return keywords.some(function (kw) {
-      return n.includes(kw);
+      return n.includes(normalise(kw));
     });
   }
 
@@ -266,8 +266,17 @@
     var delay = 400 + Math.random() * 600;
     setTimeout(function () {
       hideTyping();
-      var response = findResponse(text);
-      addMessage(response, "assistant");
+      try {
+        var response = findResponse(text);
+        addMessage(response, "assistant");
+      } catch (err) {
+        console.error("Smart Content Hub error:", err);
+        addMessage(
+          "Entschuldigung, bei der Verarbeitung Ihrer Frage ist ein Fehler aufgetreten. " +
+          "Bitte versuchen Sie es mit einer anderen Formulierung oder wählen Sie ein Thema aus der Seitenleiste.",
+          "assistant"
+        );
+      }
     }, delay);
   }
 
