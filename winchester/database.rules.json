@@ -4,19 +4,19 @@
       ".read": true,
       ".write": true,
       "members": {
-        ".validate": "newData.isList()"
+        ".validate": "newData.hasChildren()"
       },
       "log": {
-        ".validate": "newData.isList()"
+        ".validate": "newData.hasChildren()"
       },
       "event": {
         ".validate": "newData.hasChildren(['name', 'date'])"
       },
       "checkedIn": {
-        ".validate": "newData.isList()"
+        ".validate": "newData.hasChildren()"
       },
       "drinks": {
-        ".validate": "newData.isList()"
+        ".validate": "newData.hasChildren()"
       },
       "$other": {
         ".validate": false
