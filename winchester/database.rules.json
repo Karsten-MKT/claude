@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "winchester": {
+      ".read": true,
+      ".write": true,
+      "members": {
+        ".validate": "newData.isList()"
+      },
+      "log": {
+        ".validate": "newData.isList()"
+      },
+      "event": {
+        ".validate": "newData.hasChildren(['name', 'date'])"
+      },
+      "checkedIn": {
+        ".validate": "newData.isList()"
+      },
+      "drinks": {
+        ".validate": "newData.isList()"
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

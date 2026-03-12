@@ -46,8 +46,9 @@
   //  Trage hier deine Firebase-Projekt-Daten ein.
   //  Anleitung: https://console.firebase.google.com
   //  1. Neues Projekt erstellen
-  //  2. Realtime Database aktivieren (Regeln auf true setzen)
-  //  3. Web-App hinzufuegen und Config hier eintragen
+  //  2. Realtime Database aktivieren
+  //  3. Sicherheitsregeln aus database.rules.json uebernehmen
+  //  4. Web-App hinzufuegen und Config hier eintragen
   // ==========================================
   var FIREBASE_CONFIG = {
     databaseURL: "https://winchester-app-c8241-default-rtdb.europe-west1.firebasedatabase.app"
