@@ -442,6 +442,123 @@ body {
   50% { opacity: 0.85; transform: scale(1.05); }
 }
 
+/* ===== RSVP ===== */
+.rsvp-card .btn {
+  margin-top: 12px;
+}
+
+.rsvp-group {
+  margin-bottom: 10px;
+}
+
+.rsvp-group:last-child {
+  margin-bottom: 0;
+}
+
+.rsvp-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.rsvp-yes-label {
+  color: var(--green-glow);
+}
+
+.rsvp-no-label {
+  color: var(--danger-light);
+}
+
+.rsvp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rsvp-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.rsvp-chip-yes {
+  background: var(--green-dark);
+  border: 1px solid var(--green);
+  color: var(--text);
+}
+
+.rsvp-chip-no {
+  background: rgba(139, 32, 32, 0.3);
+  border: 1px solid var(--danger);
+  color: var(--text-dim);
+}
+
+.rsvp-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.rsvp-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+}
+
+.rsvp-member-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.rsvp-member-info .avatar {
+  font-size: 22px;
+}
+
+.rsvp-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.rsvp-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--bg-card-border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+}
+
+.rsvp-btn:active {
+  transform: scale(0.95);
+}
+
+.rsvp-btn-yes.active {
+  background: var(--green-dark);
+  border-color: var(--green-light);
+  color: var(--text);
+}
+
+.rsvp-btn-no.active {
+  background: var(--danger);
+  border-color: var(--danger-light);
+  color: var(--text);
+}
+
 /* ===== Leaderboard ===== */
 .leaderboard {
   display: flex;

@@ -83,6 +83,12 @@
         <p id="countdown-event-name" class="event-name" style="display:none;"></p>
         <p id="no-event-msg" class="no-event">Kein Termin geplant</p>
       </div>
+
+      <div id="rsvp-status" class="card rsvp-card" style="display:none;">
+        <h2>Wer kommt?</h2>
+        <div id="rsvp-list"></div>
+        <button class="btn btn-primary" onclick="app.openRsvp()">Zu- / Absagen</button>
+      </div>
     </section>
 
     <!-- ===== LEADERBOARD ===== -->
@@ -157,6 +163,15 @@
       </div>
     </section>
   </main>
+
+  <!-- RSVP Modal -->
+  <div id="rsvp-modal" class="modal">
+    <div class="modal-content">
+      <h3>Zu- / Absagen</h3>
+      <div id="rsvp-members" class="rsvp-members"></div>
+      <button class="btn btn-secondary" onclick="app.closeRsvpModal()">Fertig</button>
+    </div>
+  </div>
 
   <!-- Check-in Modal -->
   <div id="checkin-modal" class="modal">

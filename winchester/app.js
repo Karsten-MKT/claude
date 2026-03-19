@@ -33,6 +33,7 @@
     event: null,
     pubLocation: null,
     checkedIn: [],
+    rsvp: {},
   };
 
   var selectedMemberId = null;
@@ -79,7 +80,8 @@
       log: state.log,
       event: state.event,
       checkedIn: state.checkedIn,
-      drinks: state.drinks
+      drinks: state.drinks,
+      rsvp: state.rsvp
     };
     db.ref('winchester').set(shared).then(function () {
       setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
@@ -99,6 +101,7 @@
       state.log = data.log || [];
       state.event = data.event || null;
       state.checkedIn = data.checkedIn || [];
+      state.rsvp = data.rsvp || {};
       if (data.drinks && data.drinks.length > 0) {
         state.drinks = data.drinks;
         if (migrateDrinkPoints()) {
@@ -150,6 +153,7 @@
         state.event = parsed.event || null;
         state.pubLocation = parsed.pubLocation || null;
         state.checkedIn = parsed.checkedIn || [];
+        state.rsvp = parsed.rsvp || {};
 
         // Migrate: rename old "cocktail" drink to "jgl"
         for (var i = 0; i < state.drinks.length; i++) {
@@ -284,6 +288,7 @@
     updateCheckInStatus();
     renderCheckedIn();
     renderCountdown();
+    renderRsvpStatus();
   }
 
   function updateCheckInStatus() {
@@ -421,6 +426,111 @@
     var display = document.getElementById('countdown-display');
     if (overlay) overlay.style.display = 'none';
     if (display) display.style.opacity = '1';
+  }
+
+  // ==========================================
+  //  RSVP (Zu-/Absagen)
+  // ==========================================
+  function renderRsvpStatus() {
+    var container = document.getElementById('rsvp-status');
+    if (!container) return;
+
+    if (!state.event || !state.event.date) {
+      container.style.display = 'none';
+      return;
+    }
+
+    // Don't show RSVP if event is in the past
+    if (new Date(state.event.date).getTime() <= Date.now()) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+
+    var yesMembers = [];
+    var noMembers = [];
+    for (var mid in state.rsvp) {
+      var member = findMember(mid);
+      if (!member) continue;
+      if (state.rsvp[mid] === 'yes') yesMembers.push(member);
+      else if (state.rsvp[mid] === 'no') noMembers.push(member);
+    }
+
+    var html = '';
+    if (yesMembers.length > 0) {
+      html += '<div class="rsvp-group"><span class="rsvp-label rsvp-yes-label">Zusagen (' + yesMembers.length + ')</span><div class="rsvp-chips">';
+      for (var i = 0; i < yesMembers.length; i++) {
+        html += '<span class="rsvp-chip rsvp-chip-yes">' + yesMembers[i].avatar + ' ' + escapeHtml(yesMembers[i].name) + '</span>';
+      }
+      html += '</div></div>';
+    }
+    if (noMembers.length > 0) {
+      html += '<div class="rsvp-group"><span class="rsvp-label rsvp-no-label">Absagen (' + noMembers.length + ')</span><div class="rsvp-chips">';
+      for (var j = 0; j < noMembers.length; j++) {
+        html += '<span class="rsvp-chip rsvp-chip-no">' + noMembers[j].avatar + ' ' + escapeHtml(noMembers[j].name) + '</span>';
+      }
+      html += '</div></div>';
+    }
+    if (yesMembers.length === 0 && noMembers.length === 0) {
+      html = '<p class="hint" style="margin-bottom:0;">Noch keine Rückmeldungen</p>';
+    }
+
+    document.getElementById('rsvp-list').innerHTML = html;
+  }
+
+  function openRsvp() {
+    if (state.members.length === 0) {
+      showToast('Füge zuerst Stammgäste hinzu!');
+      navigateTo('settings');
+      return;
+    }
+    if (!state.event || !state.event.date) {
+      showToast('Zuerst einen Termin setzen!');
+      return;
+    }
+    renderRsvpModal();
+    document.getElementById('rsvp-modal').classList.add('show');
+  }
+
+  function renderRsvpModal() {
+    var container = document.getElementById('rsvp-members');
+    var html = '';
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      var status = state.rsvp[m.id] || '';
+      html += '<div class="rsvp-member-row" data-member-id="' + m.id + '">'
+        + '<span class="rsvp-member-info"><span class="avatar">' + m.avatar + '</span> ' + escapeHtml(m.name) + '</span>'
+        + '<div class="rsvp-buttons">'
+        + '<button class="rsvp-btn rsvp-btn-yes' + (status === 'yes' ? ' active' : '') + '" data-member-id="' + m.id + '" data-status="yes">Zu</button>'
+        + '<button class="rsvp-btn rsvp-btn-no' + (status === 'no' ? ' active' : '') + '" data-member-id="' + m.id + '" data-status="no">Ab</button>'
+        + '</div></div>';
+    }
+    container.innerHTML = html;
+
+    var buttons = container.querySelectorAll('.rsvp-btn');
+    for (var j = 0; j < buttons.length; j++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          toggleRsvp(btn.getAttribute('data-member-id'), btn.getAttribute('data-status'));
+        });
+      })(buttons[j]);
+    }
+  }
+
+  function toggleRsvp(memberId, status) {
+    if (state.rsvp[memberId] === status) {
+      delete state.rsvp[memberId];
+    } else {
+      state.rsvp[memberId] = status;
+    }
+    saveState();
+    renderRsvpModal();
+    renderRsvpStatus();
+  }
+
+  function closeRsvpModal() {
+    document.getElementById('rsvp-modal').classList.remove('show');
   }
 
   // ==========================================
@@ -822,6 +932,7 @@
 
     state.members = state.members.filter(function (m) { return m.id !== id; });
     state.checkedIn = state.checkedIn.filter(function (cid) { return cid !== id; });
+    delete state.rsvp[id];
     saveState();
     renderMembersList();
     showToast(member.name + ' entfernt');
@@ -837,6 +948,7 @@
     }
 
     state.event = { name: name || 'Pub-Abend', date: date };
+    state.rsvp = {};
     resetCountdownExpired();
     saveState();
     renderCountdown();
@@ -878,6 +990,7 @@
       event: null,
       pubLocation: null,
       checkedIn: [],
+      rsvp: {},
     };
     selectedMemberId = null;
     selectedDrinkId = null;
@@ -951,6 +1064,8 @@
   window.app = {
     openCheckIn: openCheckIn,
     closeCheckInModal: closeCheckInModal,
+    openRsvp: openRsvp,
+    closeRsvpModal: closeRsvpModal,
     addDrink: addDrink,
     addMember: addMember,
     setEvent: setEvent,

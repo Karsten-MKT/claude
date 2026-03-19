@@ -18,6 +18,9 @@
       "drinks": {
         ".validate": "newData.hasChildren()"
       },
+      "rsvp": {
+        ".validate": "newData.hasChildren()"
+      },
       "$other": {
         ".validate": false
       }
