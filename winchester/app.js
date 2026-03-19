@@ -33,7 +33,6 @@
     event: null,
     pubLocation: null,
     checkedIn: [],
-    rsvp: {},
   };
 
   var selectedMemberId = null;
@@ -80,8 +79,7 @@
       log: state.log,
       event: state.event,
       checkedIn: state.checkedIn,
-      drinks: state.drinks,
-      rsvp: state.rsvp
+      drinks: state.drinks
     };
     db.ref('winchester').set(shared).then(function () {
       setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
@@ -101,7 +99,6 @@
       state.log = data.log || [];
       state.event = data.event || null;
       state.checkedIn = data.checkedIn || [];
-      state.rsvp = data.rsvp || {};
       if (data.drinks && data.drinks.length > 0) {
         state.drinks = data.drinks;
         if (migrateDrinkPoints()) {
@@ -153,7 +150,11 @@
         state.event = parsed.event || null;
         state.pubLocation = parsed.pubLocation || null;
         state.checkedIn = parsed.checkedIn || [];
-        state.rsvp = parsed.rsvp || {};
+
+        // Migrate: move rsvp from top-level into event object
+        if (parsed.rsvp && parsed.event && !parsed.event.rsvp) {
+          state.event.rsvp = parsed.rsvp;
+        }
 
         // Migrate: rename old "cocktail" drink to "jgl"
         for (var i = 0; i < state.drinks.length; i++) {
@@ -429,8 +430,12 @@
   }
 
   // ==========================================
-  //  RSVP (Zu-/Absagen)
+  //  RSVP (Zu-/Absagen) — stored inside state.event.rsvp
   // ==========================================
+  function getEventRsvp() {
+    return (state.event && state.event.rsvp) ? state.event.rsvp : {};
+  }
+
   function renderRsvpStatus() {
     var container = document.getElementById('rsvp-status');
     if (!container) return;
@@ -448,13 +453,14 @@
 
     container.style.display = 'block';
 
+    var rsvp = getEventRsvp();
     var yesMembers = [];
     var noMembers = [];
-    for (var mid in state.rsvp) {
+    for (var mid in rsvp) {
       var member = findMember(mid);
       if (!member) continue;
-      if (state.rsvp[mid] === 'yes') yesMembers.push(member);
-      else if (state.rsvp[mid] === 'no') noMembers.push(member);
+      if (rsvp[mid] === 'yes') yesMembers.push(member);
+      else if (rsvp[mid] === 'no') noMembers.push(member);
     }
 
     var html = '';
@@ -495,10 +501,11 @@
 
   function renderRsvpModal() {
     var container = document.getElementById('rsvp-members');
+    var rsvp = getEventRsvp();
     var html = '';
     for (var i = 0; i < state.members.length; i++) {
       var m = state.members[i];
-      var status = state.rsvp[m.id] || '';
+      var status = rsvp[m.id] || '';
       html += '<div class="rsvp-member-row" data-member-id="' + m.id + '">'
         + '<span class="rsvp-member-info"><span class="avatar">' + m.avatar + '</span> ' + escapeHtml(m.name) + '</span>'
         + '<div class="rsvp-buttons">'
@@ -519,10 +526,12 @@
   }
 
   function toggleRsvp(memberId, status) {
-    if (state.rsvp[memberId] === status) {
-      delete state.rsvp[memberId];
+    if (!state.event) return;
+    if (!state.event.rsvp) state.event.rsvp = {};
+    if (state.event.rsvp[memberId] === status) {
+      delete state.event.rsvp[memberId];
     } else {
-      state.rsvp[memberId] = status;
+      state.event.rsvp[memberId] = status;
     }
     saveState();
     renderRsvpModal();
@@ -932,7 +941,7 @@
 
     state.members = state.members.filter(function (m) { return m.id !== id; });
     state.checkedIn = state.checkedIn.filter(function (cid) { return cid !== id; });
-    delete state.rsvp[id];
+    if (state.event && state.event.rsvp) delete state.event.rsvp[id];
     saveState();
     renderMembersList();
     showToast(member.name + ' entfernt');
@@ -948,7 +957,6 @@
     }
 
     state.event = { name: name || 'Pub-Abend', date: date };
-    state.rsvp = {};
     resetCountdownExpired();
     saveState();
     renderCountdown();
@@ -990,7 +998,6 @@
       event: null,
       pubLocation: null,
       checkedIn: [],
-      rsvp: {},
     };
     selectedMemberId = null;
     selectedDrinkId = null;
