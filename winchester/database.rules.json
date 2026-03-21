@@ -18,6 +18,11 @@
       "drinks": {
         ".validate": "newData.hasChildren()"
       },
+      "photos": {
+        "$photoId": {
+          ".validate": "newData.hasChildren(['dataUrl', 'uploadedBy', 'timestamp'])"
+        }
+      },
       "$other": {
         ".validate": false
       }

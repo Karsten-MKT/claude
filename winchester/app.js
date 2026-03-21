@@ -33,10 +33,13 @@
     event: null,
     pubLocation: null,
     checkedIn: [],
+    photos: [],
   };
 
   var selectedMemberId = null;
   var selectedDrinkId = null;
+  var selectedGalleryMemberId = null;
+  var currentLightboxPhotoId = null;
   var countdownInterval = null;
   var selectedAvatar = AVATARS[0];
   var editingMemberEmoji = null;
@@ -81,7 +84,7 @@
       checkedIn: state.checkedIn,
       drinks: state.drinks
     };
-    db.ref('winchester').set(shared).then(function () {
+    db.ref('winchester').update(shared).then(function () {
       setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
     }).catch(function (e) {
       console.error('Firebase sync error:', e);
@@ -104,6 +107,15 @@
         if (migrateDrinkPoints()) {
           syncToFirebase();
         }
+      }
+      // Photos are stored as object keyed by id → convert to sorted array
+      state.photos = [];
+      if (data.photos) {
+        var photoKeys = Object.keys(data.photos);
+        for (var pi = 0; pi < photoKeys.length; pi++) {
+          state.photos.push(Object.assign({ id: photoKeys[pi] }, data.photos[photoKeys[pi]]));
+        }
+        state.photos.sort(function (a, b) { return b.timestamp - a.timestamp; });
       }
       saveLocal();
       renderAll();
@@ -150,6 +162,7 @@
         state.event = parsed.event || null;
         state.pubLocation = parsed.pubLocation || null;
         state.checkedIn = parsed.checkedIn || [];
+        state.photos = parsed.photos || [];
 
         // Migrate: move rsvp from top-level into event object
         if (parsed.rsvp && parsed.event && !parsed.event.rsvp) {
@@ -278,6 +291,7 @@
       case 'home': renderHome(); break;
       case 'leaderboard': renderLeaderboard(); break;
       case 'drinks': renderDrinksPage(); break;
+      case 'gallery': renderGallery(); break;
       case 'settings': renderSettings(); break;
     }
   }
@@ -540,6 +554,186 @@
 
   function closeRsvpModal() {
     document.getElementById('rsvp-modal').classList.remove('show');
+  }
+
+  // ==========================================
+  //  GALLERY
+  // ==========================================
+  function renderGallery() {
+    renderGalleryMemberSelect();
+    renderGalleryGrid();
+  }
+
+  function renderGalleryMemberSelect() {
+    var container = document.getElementById('gallery-member-select');
+    if (!container) return;
+    var html = '';
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      var sel = selectedGalleryMemberId === m.id ? ' selected' : '';
+      html += '<button class="member-chip' + sel + '" data-id="' + m.id + '">'
+        + m.avatar + ' ' + escapeHtml(m.name) + '</button>';
+    }
+    if (html === '') {
+      html = '<p class="hint">Füge zuerst Stammgäste unter Einstellungen hinzu.</p>';
+    }
+    container.innerHTML = html;
+
+    var chips = container.querySelectorAll('.member-chip');
+    for (var j = 0; j < chips.length; j++) {
+      (function (chip) {
+        chip.addEventListener('click', function () {
+          selectedGalleryMemberId = selectedGalleryMemberId === chip.getAttribute('data-id')
+            ? null : chip.getAttribute('data-id');
+          renderGalleryMemberSelect();
+          document.getElementById('btn-upload-photo').disabled = !selectedGalleryMemberId;
+        });
+      })(chips[j]);
+    }
+  }
+
+  function renderGalleryGrid() {
+    var grid = document.getElementById('gallery-grid');
+    if (!grid) return;
+    if (state.photos.length === 0) {
+      grid.innerHTML = '<p class="empty-state gallery-empty">Noch keine Fotos — ladet eure schönsten Pub-Momente hoch!</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < state.photos.length; i++) {
+      var p = state.photos[i];
+      var date = new Date(p.timestamp);
+      var dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      html += '<div class="gallery-item" data-id="' + p.id + '">'
+        + '<img src="' + p.dataUrl + '" alt="Pub-Foto" loading="lazy">'
+        + '<div class="gallery-item-meta">'
+        + '<span class="gallery-uploader">' + escapeHtml(p.uploaderAvatar || '') + ' ' + escapeHtml(p.uploaderName || '') + '</span>'
+        + '<span class="gallery-timestamp">' + dateStr + '</span>'
+        + '</div></div>';
+    }
+    grid.innerHTML = html;
+
+    var items = grid.querySelectorAll('.gallery-item');
+    for (var j = 0; j < items.length; j++) {
+      (function (item) {
+        item.addEventListener('click', function () {
+          openLightbox(item.getAttribute('data-id'));
+        });
+      })(items[j]);
+    }
+  }
+
+  function triggerPhotoUpload() {
+    if (!selectedGalleryMemberId) return;
+    document.getElementById('photo-input').click();
+  }
+
+  function handlePhotoSelected(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    input.value = '';
+    if (!selectedGalleryMemberId) return;
+
+    compressImage(file, function (dataUrl) {
+      savePhoto(dataUrl, selectedGalleryMemberId);
+    });
+  }
+
+  function compressImage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var MAX = 1000;
+        var w = img.width, h = img.height;
+        if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+        else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function savePhoto(dataUrl, memberId) {
+    var member = findMember(memberId);
+    if (!member) return;
+
+    // Limit gallery to 40 photos (remove oldest if exceeded)
+    if (state.photos.length >= 40) {
+      var oldest = state.photos[state.photos.length - 1];
+      deletePhotoById(oldest.id, true);
+    }
+
+    var id = uuid() + '-' + uuid();
+    var photoData = {
+      dataUrl: dataUrl,
+      uploadedBy: memberId,
+      uploaderName: member.name,
+      uploaderAvatar: member.avatar,
+      timestamp: Date.now(),
+    };
+
+    state.photos.unshift(Object.assign({ id: id }, photoData));
+    saveLocal();
+    renderGalleryGrid();
+    showToast('📸 Foto hochgeladen!');
+
+    if (firebaseReady && db) {
+      db.ref('winchester/photos/' + id).set(photoData).catch(function (e) {
+        console.error('Photo upload error:', e);
+        showToast('Fehler beim Hochladen');
+      });
+    }
+  }
+
+  function openLightbox(photoId) {
+    var photo = null;
+    for (var i = 0; i < state.photos.length; i++) {
+      if (state.photos[i].id === photoId) { photo = state.photos[i]; break; }
+    }
+    if (!photo) return;
+    currentLightboxPhotoId = photoId;
+
+    document.getElementById('lightbox-img').src = photo.dataUrl;
+    document.getElementById('lightbox-uploader').textContent =
+      (photo.uploaderAvatar || '') + ' ' + (photo.uploaderName || '');
+    var d = new Date(photo.timestamp);
+    document.getElementById('lightbox-time').textContent =
+      d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ', '
+      + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    document.getElementById('photo-lightbox').classList.add('show');
+  }
+
+  function closeLightbox() {
+    document.getElementById('photo-lightbox').classList.remove('show');
+    currentLightboxPhotoId = null;
+  }
+
+  function deleteCurrentPhoto() {
+    if (!currentLightboxPhotoId) return;
+    if (!confirm('Dieses Foto wirklich löschen?')) return;
+    closeLightbox();
+    deletePhotoById(currentLightboxPhotoId, false);
+  }
+
+  function deletePhotoById(photoId, silent) {
+    state.photos = state.photos.filter(function (p) { return p.id !== photoId; });
+    saveLocal();
+    renderGalleryGrid();
+    if (!silent) showToast('Foto gelöscht');
+
+    if (firebaseReady && db) {
+      db.ref('winchester/photos/' + photoId).remove().catch(function (e) {
+        console.error('Photo delete error:', e);
+      });
+    }
   }
 
   // ==========================================
@@ -998,7 +1192,11 @@
       event: null,
       pubLocation: null,
       checkedIn: [],
+      photos: [],
     };
+    if (firebaseReady && db) {
+      db.ref('winchester/photos').remove().catch(function () {});
+    }
     selectedMemberId = null;
     selectedDrinkId = null;
     if (countdownInterval) clearInterval(countdownInterval);
@@ -1080,6 +1278,11 @@
     resetData: resetData,
     dismissGeoBanner: dismissGeoBanner,
     goToSettings: function () { navigateTo('settings'); },
+    triggerPhotoUpload: triggerPhotoUpload,
+    handlePhotoSelected: handlePhotoSelected,
+    openLightbox: openLightbox,
+    closeLightbox: closeLightbox,
+    deleteCurrentPhoto: deleteCurrentPhoto,
   };
 
   // ==========================================
