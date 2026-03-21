@@ -829,8 +829,9 @@
   function deleteCurrentPhoto() {
     if (!currentLightboxPhotoId) return;
     if (!confirm('Dieses Foto wirklich löschen?')) return;
+    var photoId = currentLightboxPhotoId;
     closeLightbox();
-    deletePhotoById(currentLightboxPhotoId, false);
+    deletePhotoById(photoId, false);
   }
 
   function deletePhotoById(photoId, silent) {
