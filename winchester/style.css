@@ -649,6 +649,109 @@ body {
   padding: 32px 16px;
 }
 
+/* ===== BAC (Promillerechner) ===== */
+.bac-card {
+  margin-top: 16px;
+}
+
+.bac-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bac-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  gap: 10px;
+}
+
+.bac-member-info {
+  font-size: 15px;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bac-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bac-value {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bac-ok {
+  color: var(--green-glow);
+}
+
+.bac-warn {
+  color: var(--gold);
+}
+
+.bac-danger {
+  color: var(--danger-light);
+}
+
+.bac-edit-btn {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.bac-setup-btn {
+  flex-shrink: 0;
+}
+
+.bac-modal-member {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.bac-gender-select {
+  display: flex;
+  gap: 8px;
+}
+
+.bac-gender-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--bg-card-border);
+  background: var(--bg);
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.bac-gender-btn:active {
+  transform: scale(0.95);
+}
+
+.bac-gender-btn.active {
+  background: var(--green-dark);
+  border-color: var(--green-light);
+  color: var(--text);
+}
+
 /* ===== Drink Selection ===== */
 .member-chips {
   display: flex;

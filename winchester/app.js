@@ -19,6 +19,20 @@
     { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 1 },
   ];
 
+  // --- Alcohol content per drink in grams ---
+  var DRINK_ALCOHOL = {
+    guinness: 14.6,    // 0.44l Dose, 4.2% vol
+    kilkenny: 17.0,    // 0.5l, 4.3% vol
+    beer: 19.7,        // 0.5l, 5% vol (Durchschnitt)
+    whiskey: 12.6,     // 4cl, 40% vol
+    irishcoffee: 12.6, // 4cl Whiskey
+    cider: 17.8,       // 0.5l, 4.5% vol
+    shot: 12.6,        // 4cl, 40% vol
+    jgl: 12.6,         // 4cl Whiskey + Ginger Ale + Limette
+    wine: 18.9,        // 0.2l, 12% vol
+    softdrink: 0,
+  };
+
   const AVATARS = [
     '😀', '😎', '🤩', '🥳', '😇', '🤓', '🧐', '😈',
     '👻', '🤠', '🥸', '🤖', '👽', '🧔', '👨', '👩',
@@ -872,6 +886,183 @@
         + '</div></div>';
     }
     container.innerHTML = html;
+    renderBacSection();
+  }
+
+  // ==========================================
+  //  BAC (Promillerechner)
+  // ==========================================
+  var bacProfiles = {};
+
+  function loadBacProfiles() {
+    try {
+      var saved = localStorage.getItem('winchester-bac');
+      if (saved) bacProfiles = JSON.parse(saved);
+    } catch (e) {}
+  }
+
+  function saveBacProfiles() {
+    try {
+      localStorage.setItem('winchester-bac', JSON.stringify(bacProfiles));
+    } catch (e) {}
+  }
+
+  function calculateBAC(memberId) {
+    var profile = bacProfiles[memberId];
+    if (!profile || !profile.weight || !profile.gender) return null;
+
+    var factor = profile.gender === 'm' ? 0.68 : 0.55;
+    var totalAlcoholGrams = 0;
+    var firstDrinkTime = null;
+
+    for (var i = 0; i < state.log.length; i++) {
+      var entry = state.log[i];
+      if (entry.memberId !== memberId) continue;
+      var grams = DRINK_ALCOHOL[entry.drinkId] || 0;
+      if (grams <= 0) continue;
+      totalAlcoholGrams += grams;
+      if (!firstDrinkTime || entry.timestamp < firstDrinkTime) {
+        firstDrinkTime = entry.timestamp;
+      }
+    }
+
+    if (totalAlcoholGrams === 0 || !firstDrinkTime) return 0;
+
+    var hoursElapsed = (Date.now() - firstDrinkTime) / 3600000;
+    var bac = (totalAlcoholGrams / (profile.weight * factor)) - (hoursElapsed * 0.15);
+    return Math.max(0, bac);
+  }
+
+  function renderBacSection() {
+    var container = document.getElementById('bac-section');
+    if (!container) return;
+
+    if (state.members.length === 0 || state.log.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+    var listEl = document.getElementById('bac-list');
+    var html = '';
+
+    // Only show members who have drinks logged
+    var membersWithDrinks = [];
+    for (var i = 0; i < state.members.length; i++) {
+      var m = state.members[i];
+      var hasDrinks = false;
+      for (var j = 0; j < state.log.length; j++) {
+        if (state.log[j].memberId === m.id) { hasDrinks = true; break; }
+      }
+      if (hasDrinks) membersWithDrinks.push(m);
+    }
+
+    if (membersWithDrinks.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+
+    for (var k = 0; k < membersWithDrinks.length; k++) {
+      var member = membersWithDrinks[k];
+      var profile = bacProfiles[member.id];
+      var bac = calculateBAC(member.id);
+
+      html += '<div class="bac-entry">';
+      html += '<div class="bac-member-info">';
+      html += '<span>' + member.avatar + ' ' + escapeHtml(member.name) + '</span>';
+      html += '</div>';
+
+      if (profile && profile.weight && profile.gender) {
+        var bacDisplay = bac !== null ? bac.toFixed(2) : '—';
+        var bacClass = 'bac-value';
+        if (bac !== null) {
+          if (bac >= 1.5) bacClass += ' bac-danger';
+          else if (bac >= 0.5) bacClass += ' bac-warn';
+          else bacClass += ' bac-ok';
+        }
+        html += '<div class="bac-result">';
+        html += '<span class="' + bacClass + '">' + bacDisplay + ' ‰</span>';
+        html += '<button class="btn-icon bac-edit-btn" data-id="' + member.id + '" title="Daten ändern">⚙</button>';
+        html += '</div>';
+      } else {
+        html += '<button class="btn btn-sm btn-secondary bac-setup-btn" data-id="' + member.id + '">Daten eingeben</button>';
+      }
+
+      html += '</div>';
+    }
+
+    listEl.innerHTML = html;
+
+    var setupBtns = listEl.querySelectorAll('.bac-setup-btn');
+    for (var s = 0; s < setupBtns.length; s++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          openBacModal(btn.getAttribute('data-id'));
+        });
+      })(setupBtns[s]);
+    }
+
+    var editBtns = listEl.querySelectorAll('.bac-edit-btn');
+    for (var e = 0; e < editBtns.length; e++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          openBacModal(btn.getAttribute('data-id'));
+        });
+      })(editBtns[e]);
+    }
+  }
+
+  var bacModalMemberId = null;
+
+  function openBacModal(memberId) {
+    bacModalMemberId = memberId;
+    var member = findMember(memberId);
+    if (!member) return;
+
+    var profile = bacProfiles[memberId] || {};
+    document.getElementById('bac-modal-name').textContent = member.avatar + ' ' + member.name;
+    document.getElementById('bac-weight').value = profile.weight || '';
+
+    var genderBtns = document.querySelectorAll('.bac-gender-btn');
+    for (var i = 0; i < genderBtns.length; i++) {
+      genderBtns[i].classList.toggle('active', genderBtns[i].getAttribute('data-gender') === (profile.gender || ''));
+    }
+
+    document.getElementById('bac-modal').classList.add('show');
+  }
+
+  function closeBacModal() {
+    document.getElementById('bac-modal').classList.remove('show');
+    bacModalMemberId = null;
+  }
+
+  function selectBacGender(gender) {
+    var btns = document.querySelectorAll('.bac-gender-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-gender') === gender);
+    }
+  }
+
+  function saveBacData() {
+    if (!bacModalMemberId) return;
+    var weight = parseFloat(document.getElementById('bac-weight').value);
+    var genderBtn = document.querySelector('.bac-gender-btn.active');
+    var gender = genderBtn ? genderBtn.getAttribute('data-gender') : null;
+
+    if (!weight || weight < 30 || weight > 250) {
+      showToast('Bitte gültiges Gewicht eingeben (30-250 kg)');
+      return;
+    }
+    if (!gender) {
+      showToast('Bitte Geschlecht auswählen');
+      return;
+    }
+
+    bacProfiles[bacModalMemberId] = { weight: weight, gender: gender };
+    saveBacProfiles();
+    closeBacModal();
+    renderBacSection();
+    showToast('Daten gespeichert');
   }
 
   // ==========================================
@@ -1302,6 +1493,9 @@
     openLightbox: openLightbox,
     closeLightbox: closeLightbox,
     deleteCurrentPhoto: deleteCurrentPhoto,
+    closeBacModal: closeBacModal,
+    selectBacGender: selectBacGender,
+    saveBacData: saveBacData,
   };
 
   // ==========================================
@@ -1309,6 +1503,7 @@
   // ==========================================
   function init() {
     loadState();
+    loadBacProfiles();
     initFirebase();
     initNavigation();
     renderHome();
