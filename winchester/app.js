@@ -1395,6 +1395,7 @@
     if (!confirm('Wirklich ALLE Daten löschen?')) return;
     if (!confirm('Bist du sicher? Alle Getränke, Mitglieder und Termine werden gelöscht.')) return;
 
+    var savedPhotos = state.photos.slice();
     state = {
       members: [],
       drinks: DEFAULT_DRINKS.map(function (d) { return Object.assign({}, d); }),
@@ -1402,15 +1403,31 @@
       event: null,
       pubLocation: null,
       checkedIn: [],
-      photos: [],
+      photos: savedPhotos,
     };
-    if (firebaseReady && db) {
-      db.ref('winchester/photos').remove().catch(function () {});
-    }
+    bacProfiles = {};
+    saveBacProfiles();
     selectedMemberId = null;
     selectedDrinkId = null;
     if (countdownInterval) clearInterval(countdownInterval);
-    saveState();
+    saveLocal();
+
+    if (firebaseReady && db) {
+      ignoreNextFirebaseUpdate = true;
+      db.ref('winchester').update({
+        members: null,
+        log: null,
+        event: null,
+        checkedIn: null,
+        drinks: state.drinks
+      }).then(function () {
+        setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 1000);
+      }).catch(function (e) {
+        console.error('Firebase reset error:', e);
+        ignoreNextFirebaseUpdate = false;
+      });
+    }
+
     renderSettings();
     renderHome();
     showToast('Alle Daten gelöscht');
