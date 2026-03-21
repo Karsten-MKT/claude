@@ -60,6 +60,7 @@
   var db = null;
   var firebaseReady = false;
   var ignoreNextFirebaseUpdate = false;
+  var ignorePhotoUpdate = false;
 
   function initFirebase() {
     if (!FIREBASE_CONFIG.databaseURL || typeof firebase === 'undefined') return;
@@ -94,6 +95,7 @@
 
   function listenToFirebase() {
     if (!firebaseReady || !db) return;
+    // Main state listener (excludes photos)
     db.ref('winchester').on('value', function (snapshot) {
       if (ignoreNextFirebaseUpdate) return;
       var data = snapshot.val();
@@ -108,17 +110,26 @@
           syncToFirebase();
         }
       }
-      // Photos are stored as object keyed by id → convert to sorted array
+      saveLocal();
+      renderAll();
+    });
+    // Separate photo listener — avoids race conditions with main state
+    db.ref('winchester/photos').on('value', function (snapshot) {
+      if (ignorePhotoUpdate) return;
+      var data = snapshot.val();
       state.photos = [];
-      if (data.photos) {
-        var photoKeys = Object.keys(data.photos);
-        for (var pi = 0; pi < photoKeys.length; pi++) {
-          state.photos.push(Object.assign({ id: photoKeys[pi] }, data.photos[photoKeys[pi]]));
+      if (data) {
+        var keys = Object.keys(data);
+        for (var i = 0; i < keys.length; i++) {
+          state.photos.push(Object.assign({ id: keys[i] }, data[keys[i]]));
         }
         state.photos.sort(function (a, b) { return b.timestamp - a.timestamp; });
       }
       saveLocal();
-      renderAll();
+      var galleryPage = document.getElementById('page-gallery');
+      if (galleryPage && galleryPage.classList.contains('active')) {
+        renderGalleryGrid();
+      }
     });
   }
 
@@ -685,8 +696,12 @@
     showToast('📸 Foto hochgeladen!');
 
     if (firebaseReady && db) {
-      db.ref('winchester/photos/' + id).set(photoData).catch(function (e) {
+      ignorePhotoUpdate = true;
+      db.ref('winchester/photos/' + id).set(photoData).then(function () {
+        setTimeout(function () { ignorePhotoUpdate = false; }, 500);
+      }).catch(function (e) {
         console.error('Photo upload error:', e);
+        ignorePhotoUpdate = false;
         showToast('Fehler beim Hochladen');
       });
     }
@@ -730,8 +745,12 @@
     if (!silent) showToast('Foto gelöscht');
 
     if (firebaseReady && db) {
-      db.ref('winchester/photos/' + photoId).remove().catch(function (e) {
+      ignorePhotoUpdate = true;
+      db.ref('winchester/photos/' + photoId).remove().then(function () {
+        setTimeout(function () { ignorePhotoUpdate = false; }, 500);
+      }).catch(function (e) {
         console.error('Photo delete error:', e);
+        ignorePhotoUpdate = false;
       });
     }
   }
