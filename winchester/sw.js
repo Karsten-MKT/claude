@@ -1,4 +1,4 @@
-const CACHE_NAME = 'winchester-v9';
+const CACHE_NAME = 'winchester-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,21 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+
+  // Network-first for same-origin app files (HTML, CSS, JS)
+  if (url.origin === self.location.origin) {
+    e.respondWith(
+      fetch(e.request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for external resources (Firebase SDK etc.)
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
