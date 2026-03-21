@@ -58,6 +58,20 @@
   var selectedAvatar = AVATARS[0];
   var editingMemberEmoji = null;
 
+  // --- Device ID (persistent per device, for photo ownership) ---
+  var deviceId = (function () {
+    var key = 'winchester-device-id';
+    var id = localStorage.getItem(key);
+    if (!id) {
+      id = 'dev-' + uuid() + '-' + uuid() + '-' + Date.now().toString(36);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  })();
+
+  // Track last known event to detect new events from Firebase
+  var lastKnownEventDate = null;
+
   // ==========================================
   //  FIREBASE CONFIG
   //  Trage hier deine Firebase-Projekt-Daten ein.
@@ -114,6 +128,7 @@
       if (ignoreNextFirebaseUpdate) return;
       var data = snapshot.val();
       if (!data) return;
+      var oldEventDate = state.event ? state.event.date : null;
       state.members = data.members || [];
       state.log = data.log || [];
       state.event = data.event || null;
@@ -124,6 +139,13 @@
           syncToFirebase();
         }
       }
+      // Check if a new event was set by another device
+      var newEventDate = state.event ? state.event.date : null;
+      if (newEventDate && newEventDate !== oldEventDate && newEventDate !== lastKnownEventDate) {
+        notifyNewEvent(state.event);
+      }
+      lastKnownEventDate = newEventDate;
+
       saveLocal();
       renderAll();
     });
@@ -468,6 +490,57 @@
     if (display) display.style.opacity = '1';
   }
 
+  // --- New Event Notification ---
+  function notifyNewEvent(event) {
+    if (!event || !event.date) return;
+    var eventName = event.name || 'Pub-Abend';
+    var d = new Date(event.date);
+    var dateStr = d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+    playEventChime();
+    showEventBanner(eventName, dateStr);
+  }
+
+  function playEventChime() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Ascending pub-bell chime: G4, B4, D5, G5
+      var notes = [392.00, 493.88, 587.33, 783.99];
+      for (var i = 0; i < notes.length; i++) {
+        (function (freq, idx) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.35, ctx.currentTime + idx * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.18 + 0.5);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.18);
+          osc.stop(ctx.currentTime + idx * 0.18 + 0.5);
+        })(notes[i], i);
+      }
+    } catch (e) {}
+  }
+
+  function showEventBanner(eventName, dateStr) {
+    var banner = document.getElementById('event-notification');
+    if (!banner) return;
+    document.getElementById('event-notif-title').textContent = eventName;
+    document.getElementById('event-notif-date').textContent = dateStr;
+    banner.classList.add('show');
+
+    // Auto-dismiss after 8 seconds
+    setTimeout(function () {
+      banner.classList.remove('show');
+    }, 8000);
+  }
+
+  function dismissEventNotification() {
+    var banner = document.getElementById('event-notification');
+    if (banner) banner.classList.remove('show');
+  }
+
   // ==========================================
   //  RSVP (Zu-/Absagen) — stored inside state.event.rsvp
   // ==========================================
@@ -701,6 +774,7 @@
       uploadedBy: memberId,
       uploaderName: member.name,
       uploaderAvatar: member.avatar,
+      deviceId: deviceId,
       timestamp: Date.now(),
     };
 
@@ -736,6 +810,13 @@
     document.getElementById('lightbox-time').textContent =
       d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ', '
       + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    var deleteBtn = document.getElementById('lightbox-delete');
+    if (photo.deviceId && photo.deviceId !== deviceId) {
+      deleteBtn.style.display = 'none';
+    } else {
+      deleteBtn.style.display = '';
+    }
 
     document.getElementById('photo-lightbox').classList.add('show');
   }
@@ -1361,6 +1442,7 @@
     }
 
     state.event = { name: name || 'Pub-Abend', date: date };
+    lastKnownEventDate = date;
     resetCountdownExpired();
     saveState();
     renderCountdown();
@@ -1513,6 +1595,7 @@
     closeBacModal: closeBacModal,
     selectBacGender: selectBacGender,
     saveBacData: saveBacData,
+    dismissEventNotification: dismissEventNotification,
   };
 
   // ==========================================
@@ -1521,6 +1604,7 @@
   function init() {
     loadState();
     loadBacProfiles();
+    lastKnownEventDate = state.event ? state.event.date : null;
     initFirebase();
     initNavigation();
     renderHome();

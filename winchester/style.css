@@ -1136,6 +1136,72 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ===== Event Notification ===== */
+.event-notification {
+  position: fixed;
+  top: calc(var(--header-height) + var(--safe-top) + 12px);
+  left: 12px;
+  right: 12px;
+  z-index: 250;
+  transform: translateY(-120%);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.event-notification.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.event-notif-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, var(--green-dark) 0%, #1a3a14 100%);
+  border: 1px solid var(--green-light);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.event-notif-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.event-notif-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.event-notif-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--green-glow);
+}
+
+.event-notif-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-notif-date {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 /* ===== Prost Animation ===== */
 @keyframes prostBounce {
   0% { transform: scale(1); }
