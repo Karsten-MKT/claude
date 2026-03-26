@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize modules
   initTable();
+  initEditModal();
   initCalendar();
   initDashboard();
   initImport();

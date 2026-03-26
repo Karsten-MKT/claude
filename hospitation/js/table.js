@@ -86,7 +86,7 @@ function renderTable() {
   // Render rows
   const tbody = document.getElementById('tours-tbody');
   if (tours.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-8 text-center text-gray-400">Keine Termine gefunden</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-8 text-center text-gray-400">Keine Termine gefunden</td></tr>';
     document.getElementById('tour-count').textContent = '0';
     return;
   }
@@ -105,6 +105,7 @@ function renderTable() {
       <td class="px-3 py-2">${guides}</td>
       <td class="px-3 py-2">${renderTraineeSelect(tour.id, 'trainee1', tour.trainee1, tour.trainee2, past)}</td>
       <td class="px-3 py-2">${renderTraineeSelect(tour.id, 'trainee2', tour.trainee2, tour.trainee1, past)}</td>
+      <td class="px-2 py-2"><button class="edit-tour-btn text-gray-400 hover:text-primary-600 transition-colors" data-tour-id="${tour.id}" title="Bearbeiten">&#9998;</button></td>
     </tr>`;
   }).join('');
 
@@ -113,6 +114,9 @@ function renderTable() {
   // Attach change handlers
   tbody.querySelectorAll('.trainee-select').forEach(select => {
     select.addEventListener('change', onTraineeSelectChange);
+  });
+  tbody.querySelectorAll('.edit-tour-btn').forEach(btn => {
+    btn.addEventListener('click', () => openEditModal(btn.dataset.tourId));
   });
 }
 
@@ -157,4 +161,139 @@ function checkDuplicateGuide(traineeName, tour, excludeTourId) {
     const guideNames = tour.guides.join(', ');
     showToast(`Hinweis: ${traineeName} war schon bei Guide "${guideNames}" angemeldet. Für Öffentliche Führungen werden verschiedene Guides empfohlen!`, 'warning', 5000);
   }
+}
+
+// ---- Edit Modal ----
+
+function initEditModal() {
+  // Populate type dropdown
+  const typeSelect = document.getElementById('edit-type');
+  Object.entries(TOUR_TYPES).forEach(([key, val]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = val.label;
+    typeSelect.appendChild(opt);
+  });
+
+  // Show/hide subtype when type changes
+  typeSelect.addEventListener('change', () => {
+    document.getElementById('edit-subtype-wrap').classList.toggle('hidden', typeSelect.value !== 'gaenge');
+  });
+
+  // Close handlers
+  document.getElementById('edit-modal-close').addEventListener('click', closeEditModal);
+  document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+
+  // Save
+  document.getElementById('edit-save').addEventListener('click', saveEditModal);
+
+  // Delete
+  document.getElementById('edit-delete').addEventListener('click', deleteFromEditModal);
+}
+
+function openEditModal(tourId) {
+  const tour = toursCache[tourId];
+  if (!tour) return;
+
+  document.getElementById('edit-tour-id').value = tourId;
+  document.getElementById('edit-type').value = tour.type || '';
+  document.getElementById('edit-date').value = tour.date || '';
+  document.getElementById('edit-time').value = tour.time || '';
+  document.getElementById('edit-guides').value = Array.isArray(tour.guides) ? tour.guides.join(', ') : (tour.guides || '');
+
+  // Subtype
+  const isGaenge = tour.type === 'gaenge';
+  document.getElementById('edit-subtype-wrap').classList.toggle('hidden', !isGaenge);
+  document.getElementById('edit-subtype').value = tour.subtype || '';
+
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function saveEditModal() {
+  const tourId = document.getElementById('edit-tour-id').value;
+  const tour = toursCache[tourId];
+  if (!tour) return;
+
+  const newType = document.getElementById('edit-type').value;
+  const newDate = document.getElementById('edit-date').value;
+  const newTime = document.getElementById('edit-time').value;
+  const guidesStr = document.getElementById('edit-guides').value;
+  const newGuides = guidesStr ? guidesStr.split(',').map(g => g.trim()).filter(Boolean) : [];
+  const newSubtype = newType === 'gaenge' ? (document.getElementById('edit-subtype').value || null) : null;
+  const newCategory = getTypeCategory(newType);
+
+  if (!newDate) {
+    showToast('Bitte ein Datum angeben', 'error');
+    return;
+  }
+
+  // Check if ID needs to change (type, date, or time changed)
+  const newId = generateTourId(newType, newDate, newTime);
+  const idChanged = newId !== tourId;
+
+  const updatedTour = {
+    ...tour,
+    type: newType,
+    category: newCategory,
+    subtype: newSubtype,
+    date: newDate,
+    time: newTime,
+    guides: newGuides
+  };
+  delete updatedTour.id;
+
+  if (idChanged) {
+    // Delete old entry, create new one
+    deleteTour(tourId).then(() => {
+      updatedTour.createdAt = tour.createdAt || Date.now();
+      return toursRef.child(newId).set(updatedTour);
+    }).then(() => {
+      showToast('Tour aktualisiert', 'success');
+      closeEditModal();
+    }).catch(err => {
+      console.error('Edit failed:', err);
+      showToast('Fehler beim Speichern', 'error');
+    });
+  } else {
+    // Update in place
+    toursRef.child(tourId).update({
+      type: newType,
+      category: newCategory,
+      subtype: newSubtype,
+      date: newDate,
+      time: newTime,
+      guides: newGuides
+    }).then(() => {
+      showToast('Tour aktualisiert', 'success');
+      closeEditModal();
+    }).catch(err => {
+      console.error('Edit failed:', err);
+      showToast('Fehler beim Speichern', 'error');
+    });
+  }
+}
+
+function deleteFromEditModal() {
+  const tourId = document.getElementById('edit-tour-id').value;
+  if (!tourId) return;
+
+  const tour = toursCache[tourId];
+  const label = tour ? `${getTypeLabel(tour.type)} am ${formatDateDE(tour.date)}` : tourId;
+
+  if (!confirm(`Tour "${label}" wirklich löschen?`)) return;
+
+  deleteTour(tourId).then(() => {
+    showToast('Tour gelöscht', 'success');
+    closeEditModal();
+  }).catch(err => {
+    console.error('Delete failed:', err);
+    showToast('Fehler beim Löschen', 'error');
+  });
 }
