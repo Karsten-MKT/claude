@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospitation Lübeck</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a5f' },
+            accent: { 400: '#f59e0b', 500: '#d97706' }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/de.global.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-primary-900 text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-xl font-bold tracking-tight">Hospitation Lübeck</h1>
+      <div id="connection-status" class="flex items-center gap-2 text-sm">
+        <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" id="status-dot"></span>
+        <span id="status-text">Verbinde...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex gap-1 overflow-x-auto" id="nav-tabs">
+        <button class="nav-tab active" data-view="table">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          <span>Anmeldung</span>
+        </button>
+        <button class="nav-tab" data-view="calendar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>Kalender</span>
+        </button>
+        <button class="nav-tab" data-view="dashboard">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-tab" data-view="import">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span>Import</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+
+    <!-- TABLE VIEW -->
+    <section id="view-table" class="view-section">
+      <!-- Filters -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div class="flex flex-wrap gap-3 items-end">
+          <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Führungsart</label>
+            <select id="filter-type" class="input-field">
+              <option value="">Alle</option>
+            </select>
+          </div>
+          <div class="min-w-[130px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Von</label>
+            <input type="date" id="filter-from" class="input-field">
+          </div>
+          <div class="min-w-[130px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Bis</label>
+            <input type="date" id="filter-to" class="input-field">
+          </div>
+          <div class="flex items-center gap-2 pb-1">
+            <input type="checkbox" id="filter-free" class="w-4 h-4 rounded border-gray-300 text-primary-600">
+            <label for="filter-free" class="text-sm text-gray-700">Nur freie Plätze</label>
+          </div>
+          <button id="filter-reset" class="text-sm text-primary-600 hover:text-primary-800 pb-1 underline">Zurücksetzen</button>
+        </div>
+      </div>
+      <!-- Table -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="tours-table">
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="sortable px-3 py-3 text-left font-semibold text-gray-600" data-sort="type">Typ</th>
+                <th class="sortable px-3 py-3 text-left font-semibold text-gray-600" data-sort="date">Datum</th>
+                <th class="px-3 py-3 text-left font-semibold text-gray-600">Uhrzeit</th>
+                <th class="px-3 py-3 text-left font-semibold text-gray-600">Guide(s)</th>
+                <th class="px-3 py-3 text-left font-semibold text-gray-600">Azubi 1</th>
+                <th class="px-3 py-3 text-left font-semibold text-gray-600">Azubi 2</th>
+              </tr>
+            </thead>
+            <tbody id="tours-tbody">
+              <tr><td colspan="6" class="px-3 py-8 text-center text-gray-400">Lade Termine...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 bg-gray-50 border-t text-sm text-gray-500" id="table-footer">
+          <span id="tour-count">0</span> Termine
+        </div>
+      </div>
+    </section>
+
+    <!-- CALENDAR VIEW -->
+    <section id="view-calendar" class="view-section hidden">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div id="calendar"></div>
+      </div>
+      <!-- Calendar Event Detail Modal -->
+      <div id="calendar-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div class="flex justify-between items-start mb-4">
+            <h3 id="modal-title" class="text-lg font-bold text-gray-900"></h3>
+            <button id="modal-close" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          </div>
+          <div id="modal-body" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view-section hidden">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+        <div class="flex items-center gap-4">
+          <label class="font-medium text-gray-700">Azubi:</label>
+          <select id="dashboard-trainee" class="input-field max-w-xs">
+            <option value="">Bitte wählen...</option>
+          </select>
+        </div>
+      </div>
+      <div id="dashboard-content" class="hidden space-y-4">
+        <!-- Total Progress -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-gray-900">Gesamtfortschritt</h2>
+            <span id="total-progress-text" class="text-2xl font-bold text-primary-600">0/24</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div id="total-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        <!-- Category Cards -->
+        <div id="category-cards" class="grid gap-4 md:grid-cols-2"></div>
+        <!-- Upcoming Tours -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="font-bold text-gray-900 mb-3">Kommende angemeldete Termine</h3>
+          <div id="upcoming-tours" class="space-y-2"></div>
+        </div>
+        <!-- Completed Tours -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="font-bold text-gray-900 mb-3">Absolvierte Termine</h3>
+          <div id="completed-tours" class="space-y-2"></div>
+        </div>
+      </div>
+      <div id="dashboard-empty" class="text-center py-12 text-gray-400">
+        Bitte einen Azubi auswählen, um den Fortschritt zu sehen.
+      </div>
+    </section>
+
+    <!-- IMPORT VIEW -->
+    <section id="view-import" class="view-section hidden">
+      <div class="space-y-4">
+        <!-- Excel Upload -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <button class="accordion-toggle w-full flex items-center justify-between p-4 text-left" data-accordion="excel">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span class="font-semibold text-gray-900">Excel-Datei hochladen</span>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 accordion-arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-4 pb-4" id="accordion-excel">
+            <p class="text-sm text-gray-500 mb-3">Lade die Hospitationsliste als .xlsx-Datei hoch. Die Daten werden automatisch erkannt und zugeordnet.</p>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors" id="excel-dropzone">
+              <input type="file" id="excel-file" accept=".xlsx,.xls" class="hidden">
+              <svg class="w-10 h-10 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm text-gray-600">Datei hierher ziehen oder <button id="excel-browse" class="text-primary-600 underline">durchsuchen</button></p>
+            </div>
+            <div id="excel-preview" class="hidden mt-4">
+              <h4 class="font-medium text-gray-900 mb-2">Vorschau (<span id="excel-preview-count">0</span> Termine erkannt)</h4>
+              <div class="max-h-64 overflow-auto border rounded">
+                <table class="w-full text-xs" id="excel-preview-table">
+                  <thead class="bg-gray-50 sticky top-0"><tr><th class="px-2 py-1 text-left">Typ</th><th class="px-2 py-1 text-left">Datum</th><th class="px-2 py-1 text-left">Uhrzeit</th><th class="px-2 py-1 text-left">Guide(s)</th><th class="px-2 py-1 text-left">Import?</th></tr></thead>
+                  <tbody id="excel-preview-tbody"></tbody>
+                </table>
+              </div>
+              <div class="flex gap-3 mt-3">
+                <button id="excel-import-btn" class="btn-primary">Importieren</button>
+                <button id="excel-cancel-btn" class="btn-secondary">Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copy-Paste (Gästeservice) -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <button class="accordion-toggle w-full flex items-center justify-between p-4 text-left" data-accordion="paste">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              <span class="font-semibold text-gray-900">Gästeservice-Termine (Copy & Paste)</span>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 accordion-arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-4 pb-4" id="accordion-paste">
+            <p class="text-sm text-gray-500 mb-3">Füge die Termine aus der Gästeservice-Email ein (Format: "07.04.26 von 10:00 Uhr – 12:00 Uhr Schüler Führung")</p>
+            <textarea id="paste-input" class="w-full border border-gray-300 rounded-lg p-3 text-sm h-32 font-mono focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="Termine hier einfügen..."></textarea>
+            <div class="flex gap-3 mt-3">
+              <button id="paste-preview-btn" class="btn-secondary">Vorschau</button>
+            </div>
+            <div id="paste-preview" class="hidden mt-4">
+              <h4 class="font-medium text-gray-900 mb-2">Vorschau (<span id="paste-preview-count">0</span> Termine erkannt)</h4>
+              <div class="max-h-64 overflow-auto border rounded">
+                <table class="w-full text-xs" id="paste-preview-table">
+                  <thead class="bg-gray-50 sticky top-0"><tr><th class="px-2 py-1 text-left">Typ</th><th class="px-2 py-1 text-left">Datum</th><th class="px-2 py-1 text-left">Zeit</th><th class="px-2 py-1 text-left">Import?</th></tr></thead>
+                  <tbody id="paste-preview-tbody"></tbody>
+                </table>
+              </div>
+              <div class="flex gap-3 mt-3">
+                <button id="paste-import-btn" class="btn-primary">Importieren</button>
+                <button id="paste-cancel-btn" class="btn-secondary">Abbrechen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Entry -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <button class="accordion-toggle w-full flex items-center justify-between p-4 text-left" data-accordion="manual">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span class="font-semibold text-gray-900">Einzeltermin manuell anlegen</span>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 accordion-arrow transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="accordion-content hidden px-4 pb-4" id="accordion-manual">
+            <form id="manual-form" class="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Führungsart *</label>
+                <select id="manual-type" class="input-field" required></select>
+              </div>
+              <div id="manual-subtype-wrap" class="hidden">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Unterkategorie</label>
+                <select id="manual-subtype" class="input-field">
+                  <option value="">-</option>
+                  <option value="handwerker">Handwerkerviertel</option>
+                  <option value="seefahrer">Seefahrerviertel</option>
+                  <option value="domviertel">Domviertel</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Datum *</label>
+                <input type="date" id="manual-date" class="input-field" required>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Uhrzeit *</label>
+                <input type="time" id="manual-time" class="input-field" required>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Guide</label>
+                <input type="text" id="manual-guide" class="input-field" placeholder="Name des Guides">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Notizen</label>
+                <input type="text" id="manual-notes" class="input-field" placeholder="Optional">
+              </div>
+              <div class="sm:col-span-2">
+                <button type="submit" class="btn-primary">Termin anlegen</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/firebase.js"></script>
+  <script src="./js/table.js"></script>
+  <script src="./js/calendar.js"></script>
+  <script src="./js/dashboard.js"></script>
+  <script src="./js/import.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
