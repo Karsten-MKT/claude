@@ -99,7 +99,7 @@ function renderTable() {
     const subtypeLabel = tour.subtype ? ` (${GAENGE_SUBTYPES[tour.subtype] || tour.subtype})` : '';
 
     return `<tr class="${rowClass} border-b border-gray-100 hover:bg-gray-50/50" data-tour-id="${tour.id}">
-      <td class="px-3 py-2"><span class="${getTypeBadgeClass(tour.type)}">${getTypeShort(tour.type)}${subtypeLabel}</span></td>
+      <td class="px-3 py-2"><span class="${getTypeBadgeClass(tour.type)}">${getTypeLabel(tour.type)}${subtypeLabel}</span></td>
       <td class="px-3 py-2 whitespace-nowrap">${getDayOfWeek(tour.date)}, ${formatDateDE(tour.date)}</td>
       <td class="px-3 py-2 whitespace-nowrap">${formatTime(tour.time) || '-'}${tour.endTime ? ' – ' + formatTime(tour.endTime) : ''}</td>
       <td class="px-3 py-2">${guides}</td>
