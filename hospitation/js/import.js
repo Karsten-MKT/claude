@@ -156,21 +156,24 @@ function parseOeffentlich(rows) {
 }
 
 function parseSexCrime(rows) {
+  // Columns: A(0)=Datum(serial), B(1)=Uhrzeit(text), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const combined = String(row[0] || '');
-    if (!combined || combined.toLowerCase().includes('einteilung') || combined.toLowerCase().includes('start') || combined.toLowerCase().includes('ticket')) continue;
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
 
-    const { date, time } = parseCombinedDateTime(combined);
+    const date = parseDateCell(dateRaw);
     if (!date) continue;
-    const guide = cleanString(row[1]);
-    const trainee1 = matchTrainee(cleanString(row[2]));
-    const trainee2 = matchTrainee(cleanString(row[3]));
+
+    const time = parseTimeCell(row[1]) || '20:30';
+    const guide = cleanString(row[2]);
+    const trainee1 = matchTrainee(cleanString(row[3]));
+    const trainee2 = matchTrainee(cleanString(row[4]));
 
     tours.push({
       type: 'sex-crime', category: 'abend', subtype: null,
-      date, time: time || '20:30', guides: guide ? [guide] : [],
+      date, time, guides: guide ? [guide] : [],
       trainee1, trainee2, source: 'excel'
     });
   }
@@ -178,21 +181,21 @@ function parseSexCrime(rows) {
 }
 
 function parseMarzipan(rows) {
+  // Columns: A(0)=Datum(serial), B(1)=Uhrzeit, C(2)=Guide, D(3)=Guide2, E(4)=Hospitant:in, F(5)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const dateRaw = row[1];
-    const timeRaw = row[2];
-    const guide1 = cleanString(row[3]);
-    const guide2 = cleanString(row[4]);
-    if (!dateRaw && !guide1) continue;
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
 
     const date = parseDateCell(dateRaw);
     if (!date) continue;
-    const time = parseTimeCell(timeRaw) || '17:00';
+    const time = parseTimeCell(row[1]) || '17:00';
+    const guide1 = cleanString(row[2]);
+    const guide2 = cleanString(row[3]);
     const guides = [guide1, guide2].filter(Boolean);
-    const trainee1 = matchTrainee(cleanString(row[5]));
-    const trainee2 = matchTrainee(cleanString(row[6]));
+    const trainee1 = matchTrainee(cleanString(row[4]));
+    const trainee2 = matchTrainee(cleanString(row[5]));
 
     tours.push({
       type: 'marzipan', category: 'verkostigung', subtype: null,
@@ -203,41 +206,44 @@ function parseMarzipan(rows) {
 }
 
 function parseMystica(rows) {
+  // Columns: A(0)=Datum(serial), B(1)=Uhrzeit(text), C(2)=Guides, D(3)=Hospitant:in, E(4)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const combined = String(row[0] || '');
-    if (!combined || combined.toLowerCase().includes('einteilung') || combined.toLowerCase().includes('start') || combined.toLowerCase().includes('ticket')) continue;
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
 
-    const { date, time } = parseCombinedDateTime(combined);
+    const date = parseDateCell(dateRaw);
     if (!date) continue;
-    const guidesRaw = String(row[1] || '');
+
+    const time = parseTimeCell(row[1]) || '20:30';
+    const guidesRaw = String(row[2] || '');
     const guides = guidesRaw.split(/\n|,|\//).map(g => g.trim()).filter(Boolean);
-    const trainee1 = matchTrainee(cleanString(row[2]));
-    const trainee2 = matchTrainee(cleanString(row[3]));
+    const trainee1 = matchTrainee(cleanString(row[3]));
+    const trainee2 = matchTrainee(cleanString(row[4]));
 
     tours.push({
       type: 'mystica', category: 'abend', subtype: null,
-      date, time: time || '20:30', guides, trainee1, trainee2, source: 'excel'
+      date, time, guides, trainee1, trainee2, source: 'excel'
     });
   }
   return tours;
 }
 
 function parseBierfuehrung(rows) {
+  // Columns: A(0)=Datum(text DD.MM.), B(1)=Uhrzeit(text), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const dateRaw = row[1];
-    const timeRaw = row[2];
-    const guide = cleanString(row[3]);
-    if (!dateRaw && !guide) continue;
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
 
     const date = parseDateCell(dateRaw);
     if (!date) continue;
-    const time = parseTimeCell(timeRaw) || '16:30';
-    const trainee1 = matchTrainee(cleanString(row[4]));
-    const trainee2 = matchTrainee(cleanString(row[5]));
+    const time = parseTimeCell(row[1]) || '16:30';
+    const guide = cleanString(row[2]);
+    const trainee1 = matchTrainee(cleanString(row[3]));
+    const trainee2 = matchTrainee(cleanString(row[4]));
 
     tours.push({
       type: 'bierfuehrung', category: 'verkostigung', subtype: null,
@@ -337,20 +343,9 @@ function parseGlanzGloria(rows) {
 }
 
 function parseKostueme(rows) {
-  // Row 0+1 = headers, data from row 2+
-  // Columns: A(0)=Datum(text "DD.MM."), B(1)=Uhrzeit(serial), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
+  // Columns: A(0)=Datum(text DD.MM.), B(1)=Uhrzeit(serial), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
   const tours = [];
-  // Skip header rows - find first data row
-  let startIdx = 0;
-  for (let i = 0; i < Math.min(rows.length, 5); i++) {
-    const cell = cleanString(rows[i][0]).toLowerCase();
-    if (cell.includes('datum') || cell.includes('tag') || cell.includes('nr')) {
-      startIdx = i + 1;
-    }
-  }
-  if (startIdx === 0) startIdx = 2; // default: skip 2 header rows
-
-  for (let i = startIdx; i < rows.length; i++) {
+  for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     const dateRaw = row[0];
     if (!dateRaw) continue;
@@ -373,16 +368,17 @@ function parseKostueme(rows) {
 }
 
 function parseNachtwaechter(rows) {
-  // Columns: A(0)=Laufnummer(skip), B(1)=Datum(serial), C(2)=Guide1, D(3)=Guide2, E(4)=Hospitant:in, F(5)=Hospitant:in2
+  // Columns: A(0)=Datum(serial), B(1)=Uhrzeit(leer), C(2)=Guide, D(3)=Standby(Guide2), E(4)=Hospitant:in, F(5)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const dateRaw = row[1]; // column B = date
+    const dateRaw = row[0];
     if (!dateRaw) continue;
 
     const date = parseDateCell(dateRaw);
     if (!date) continue;
 
+    const time = parseTimeCell(row[1]) || '21:00';
     const guide1 = cleanString(row[2]);
     const guide2 = cleanString(row[3]);
     const guides = [guide1, guide2].filter(g => g.length > 0);
@@ -391,7 +387,7 @@ function parseNachtwaechter(rows) {
 
     tours.push({
       type: 'nachtwaechter', category: 'abend', subtype: null,
-      date, time: '21:00', guides,
+      date, time, guides,
       trainee1, trainee2, source: 'excel'
     });
   }
