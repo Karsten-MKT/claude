@@ -33,6 +33,14 @@ function initCalendar() {
   document.getElementById('calendar-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeCalendarModal();
   });
+
+  // Populate legend
+  const legendEl = document.getElementById('calendar-legend');
+  if (legendEl) {
+    legendEl.innerHTML = Object.entries(TOUR_TYPES).map(([key, val]) => {
+      return `<span class="whitespace-nowrap"><span class="${getTypeBadgeClass(key)} text-xs">${val.short}</span> = ${val.label}</span>`;
+    }).join('');
+  }
 }
 
 function renderCalendar() {
