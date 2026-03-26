@@ -148,6 +148,8 @@ function showToast(message, type = 'info', duration = 3000) {
 
 function excelSerialToDate(serial) {
   if (typeof serial !== 'number') return null;
+  // Use only integer part (fractional part is time, not date)
+  serial = Math.floor(serial);
   const epoch = new Date(1899, 11, 30);
   const d = new Date(epoch.getTime() + serial * 86400000);
   const y = d.getFullYear();
@@ -164,6 +166,9 @@ function excelTimeToString(serial) {
     }
     return null;
   }
+  // Time serials should be between 0 and 1 (fraction of a day)
+  // Values > 1 are invalid (e.g. broken Marzipan value 1700.708)
+  if (serial < 0 || serial >= 1) return null;
   const totalMinutes = Math.round(serial * 1440);
   const h = Math.floor(totalMinutes / 60);
   const min = totalMinutes % 60;
