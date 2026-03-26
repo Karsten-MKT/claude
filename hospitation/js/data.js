@@ -3,7 +3,7 @@
 // ============================================================
 
 const TRAINEES = [
-  'Bärbel', 'Conelia', 'Frauke', 'Karsten', 'Lara',
+  'Bärbel', 'Cornelia', 'Frauke', 'Karsten', 'Lara',
   'Liv', 'Martin', 'Max', 'Norbert', 'Stef',
   'Tanja', 'Thomas', 'Volker'
 ];
