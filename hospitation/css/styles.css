@@ -1,0 +1,189 @@
+/* Navigation Tabs */
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.nav-tab:hover { color: #374151; border-bottom-color: #d1d5db; }
+.nav-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+/* Form Elements */
+.input-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+.input-field:focus { outline: none; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); border-color: #3b82f6; }
+
+/* Buttons */
+.btn-primary {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #1d4ed8; }
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: #e5e7eb; }
+
+/* Table */
+#tours-table th.sortable { cursor: pointer; user-select: none; }
+#tours-table th.sortable:hover { color: #2563eb; }
+#tours-table th.sortable::after { content: ' ↕'; color: #d1d5db; }
+#tours-table th.sortable.sort-asc::after { content: ' ↑'; color: #2563eb; }
+#tours-table th.sortable.sort-desc::after { content: ' ↓'; color: #2563eb; }
+
+/* Tour row status */
+.tour-row-free { background: #fff; }
+.tour-row-partial { background: #fffbeb; }
+.tour-row-full { background: #f0fdf4; }
+.tour-row-past { opacity: 0.5; }
+
+/* Type Badges */
+.type-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.type-badge-oeffentlich { background: #dbeafe; color: #1e40af; }
+.type-badge-gaenge { background: #d1fae5; color: #065f46; }
+.type-badge-sex-crime { background: #fee2e2; color: #991b1b; }
+.type-badge-nachtwaechter { background: #e0e7ff; color: #3730a3; }
+.type-badge-mystica { background: #ede9fe; color: #5b21b6; }
+.type-badge-kostueme { background: #fce7f3; color: #9d174d; }
+.type-badge-marzipan { background: #fef3c7; color: #92400e; }
+.type-badge-lukullisch { background: #ffedd5; color: #9a3412; }
+.type-badge-bierfuehrung { background: #fef9c3; color: #854d0e; }
+.type-badge-glanz-gloria { background: #ffe4e6; color: #9f1239; }
+.type-badge-schueler { background: #cffafe; color: #155e75; }
+.type-badge-privat { background: #ccfbf1; color: #115e59; }
+.type-badge-luebsche-verfuehrung { background: #fae8ff; color: #86198f; }
+.type-badge-weihnachten { background: #fee2e2; color: #991b1b; }
+
+/* Progress Bars */
+.progress-bar-bg {
+  width: 100%;
+  height: 0.75rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 9999px;
+  transition: width 0.5s;
+}
+.progress-bar-fill.complete { background: #22c55e; }
+
+/* Accordion */
+.accordion-toggle[aria-expanded="true"] .accordion-arrow { transform: rotate(180deg); }
+.accordion-arrow { transition: transform 0.2s; }
+
+/* Calendar customization */
+.fc .fc-daygrid-event { font-size: 0.75rem; border-radius: 0.25rem; padding: 0 0.25rem; cursor: pointer; }
+.fc .fc-toolbar-title { font-size: 1.125rem; font-weight: 700; }
+.fc .fc-button-primary { background: #2563eb; border-color: #2563eb; }
+.fc .fc-button-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+.fc .fc-button-primary:not(:disabled).fc-button-active { background: #1e40af; border-color: #1e40af; }
+.cal-event-free { background-color: #e5e7eb !important; border-color: #d1d5db !important; color: #374151 !important; }
+.cal-event-partial { background-color: #fef3c7 !important; border-color: #fcd34d !important; color: #92400e !important; }
+.cal-event-full { background-color: #d1fae5 !important; border-color: #6ee7b7 !important; color: #065f46 !important; }
+
+/* Toast */
+.toast {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: opacity 0.3s;
+}
+.toast-success { background: #16a34a; color: #fff; }
+.toast-error { background: #dc2626; color: #fff; }
+.toast-warning { background: #d97706; color: #fff; }
+.toast-info { background: #2563eb; color: #fff; }
+
+/* Trainee dropdown in table */
+.trainee-select {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  background: #fff;
+  min-width: 100px;
+}
+.trainee-select:focus { outline: none; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); border-color: #3b82f6; }
+
+/* Dashboard */
+.category-card {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+  padding: 1rem;
+}
+.category-card .category-label { font-weight: 600; color: #111827; margin-bottom: 0.25rem; }
+.category-card .category-count { font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; }
+.subcategory-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+.subcategory-row .progress-bar-bg { height: 0.5rem; flex: 1; }
+
+/* Warning badge */
+.warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #tours-table { font-size: 0.75rem; }
+  #tours-table th, #tours-table td { padding: 0.5rem; }
+  .trainee-select { min-width: 80px; font-size: 0.75rem; }
+}
