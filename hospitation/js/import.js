@@ -271,8 +271,8 @@ function parseLukullisch(rows) {
 }
 
 function parseGaenge(rows) {
+  // Columns: A(0)=Datum, B(1)=Uhrzeit, C(2)=Thema, D(3)=Guide, E(4)=Hospitant:in, F(5)=Hospitant:in2
   const tours = [];
-  // Find header row
   let headerIdx = 0;
   for (let i = 0; i < Math.min(rows.length, 5); i++) {
     if (rows[i].some(c => String(c).toLowerCase().includes('datum') || String(c).toLowerCase().includes('thema'))) {
@@ -284,12 +284,14 @@ function parseGaenge(rows) {
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i];
     const dateRaw = row[0];
-    const themaRaw = cleanString(row[1] || row[2]);
-    const guide = cleanString(row[2] || row[3]);
     if (!dateRaw) continue;
 
     const date = parseDateCell(dateRaw);
     if (!date) continue;
+
+    const time = parseTimeCell(row[1]) || '14:00';
+    const themaRaw = cleanString(row[2]);
+    const guide = cleanString(row[3]);
 
     let subtype = null;
     const themaLower = (themaRaw || '').toLowerCase();
@@ -297,12 +299,12 @@ function parseGaenge(rows) {
     else if (themaLower.includes('seefahrer') || themaLower.includes('seefahr')) subtype = 'seefahrer';
     else if (themaLower.includes('dom')) subtype = 'domviertel';
 
-    const trainee1 = matchTrainee(cleanString(row[3] || row[4]));
-    const trainee2 = matchTrainee(cleanString(row[4] || row[5]));
+    const trainee1 = matchTrainee(cleanString(row[4]));
+    const trainee2 = matchTrainee(cleanString(row[5]));
 
     tours.push({
       type: 'gaenge', category: 'gaenge', subtype,
-      date, time: '14:00', guides: guide ? [guide] : [],
+      date, time, guides: guide ? [guide] : [],
       trainee1, trainee2, source: 'excel'
     });
   }
@@ -310,47 +312,86 @@ function parseGaenge(rows) {
 }
 
 function parseGlanzGloria(rows) {
-  return parseGenericSheet(rows, 'glanz-gloria', 'optional');
-}
-
-function parseKostueme(rows) {
-  return parseGenericSheet(rows, 'kostueme', 'abend');
-}
-
-function parseNachtwaechter(rows) {
-  return parseGenericSheet(rows, 'nachtwaechter', 'abend');
-}
-
-function parseGenericSheet(rows, type, category) {
+  // Columns: A(0)=Datum(serial), B(1)=Uhrzeit(serial), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
   const tours = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    let date = null;
-    let guide = '';
-    let time = null;
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
 
-    for (let j = 0; j < row.length; j++) {
-      const cell = row[j];
-      if (!date) {
-        const d = parseDateCell(cell);
-        if (d) { date = d; continue; }
-      }
-      if (!time && typeof cell === 'number' && cell < 1 && cell > 0) {
-        time = excelTimeToString(cell);
-        continue;
-      }
-      if (date && !guide && typeof cell === 'string' && cell.trim().length > 2 && !cell.match(/^\d/)) {
-        guide = cell.trim();
-      }
-    }
+    const date = parseDateCell(dateRaw);
     if (!date) continue;
 
-    const trainee1 = matchTrainee(cleanString(row[row.length - 2]));
-    const trainee2 = matchTrainee(cleanString(row[row.length - 1]));
+    const time = parseTimeCell(row[1]) || '20:00';
+    const guide = cleanString(row[2]);
+    const trainee1 = matchTrainee(cleanString(row[3]));
+    const trainee2 = matchTrainee(cleanString(row[4]));
 
     tours.push({
-      type, category, subtype: null,
-      date, time: time || '20:00', guides: guide ? [guide] : [],
+      type: 'glanz-gloria', category: 'optional', subtype: null,
+      date, time, guides: guide ? [guide] : [],
+      trainee1, trainee2, source: 'excel'
+    });
+  }
+  return tours;
+}
+
+function parseKostueme(rows) {
+  // Row 0+1 = headers, data from row 2+
+  // Columns: A(0)=Datum(text "DD.MM."), B(1)=Uhrzeit(serial), C(2)=Guide, D(3)=Hospitant:in, E(4)=Hospitant:in2
+  const tours = [];
+  // Skip header rows - find first data row
+  let startIdx = 0;
+  for (let i = 0; i < Math.min(rows.length, 5); i++) {
+    const cell = cleanString(rows[i][0]).toLowerCase();
+    if (cell.includes('datum') || cell.includes('tag') || cell.includes('nr')) {
+      startIdx = i + 1;
+    }
+  }
+  if (startIdx === 0) startIdx = 2; // default: skip 2 header rows
+
+  for (let i = startIdx; i < rows.length; i++) {
+    const row = rows[i];
+    const dateRaw = row[0];
+    if (!dateRaw) continue;
+
+    const date = parseDateCell(dateRaw);
+    if (!date) continue;
+
+    const time = parseTimeCell(row[1]) || '20:30';
+    const guide = cleanString(row[2]);
+    const trainee1 = matchTrainee(cleanString(row[3]));
+    const trainee2 = matchTrainee(cleanString(row[4]));
+
+    tours.push({
+      type: 'kostueme', category: 'abend', subtype: null,
+      date, time, guides: guide ? [guide] : [],
+      trainee1, trainee2, source: 'excel'
+    });
+  }
+  return tours;
+}
+
+function parseNachtwaechter(rows) {
+  // Columns: A(0)=Laufnummer(skip), B(1)=Datum(serial), C(2)=Guide1, D(3)=Guide2, E(4)=Hospitant:in, F(5)=Hospitant:in2
+  const tours = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const dateRaw = row[1]; // column B = date
+    if (!dateRaw) continue;
+
+    const date = parseDateCell(dateRaw);
+    if (!date) continue;
+
+    const guide1 = cleanString(row[2]);
+    const guide2 = cleanString(row[3]);
+    const guides = [guide1, guide2].filter(g => g.length > 0);
+    const trainee1 = matchTrainee(cleanString(row[4]));
+    const trainee2 = matchTrainee(cleanString(row[5]));
+
+    tours.push({
+      type: 'nachtwaechter', category: 'abend', subtype: null,
+      date, time: '21:00', guides,
       trainee1, trainee2, source: 'excel'
     });
   }
