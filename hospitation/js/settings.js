@@ -25,6 +25,11 @@ function initSettings() {
 
   document.getElementById('delete-all-tours-btn').addEventListener('click', () => {
     if (!confirm('Wirklich ALLE Touren löschen? Diese Aktion kann nicht rückgängig gemacht werden!')) return;
+    const code = prompt('Zur Bestätigung bitte "LÖSCHEN" eingeben:');
+    if (code !== 'LÖSCHEN') {
+      showToast('Abgebrochen — Eingabe stimmte nicht überein', 'info');
+      return;
+    }
     deleteAllTours().then(() => {
       showToast('Alle Touren gelöscht', 'success');
     }).catch(() => {
@@ -103,6 +108,7 @@ function renderTraineeManagement() {
     btn.addEventListener('click', () => {
       const name = btn.closest('[data-trainee]').dataset.trainee;
       if (!confirm(`"${name}" wirklich entfernen?`)) return;
+      if (!confirm(`Sicher? "${name}" wird endgültig gelöscht.`)) return;
       removeTrainee(name).then(() => {
         showToast(`"${name}" entfernt`, 'success');
       }).catch(() => {

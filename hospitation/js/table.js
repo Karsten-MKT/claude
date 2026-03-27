@@ -288,6 +288,7 @@ function deleteFromEditModal() {
   const label = tour ? `${getTypeLabel(tour.type)} am ${formatDateDE(tour.date)}` : tourId;
 
   if (!confirm(`Tour "${label}" wirklich löschen?`)) return;
+  if (!confirm('Sicher? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
 
   deleteTour(tourId).then(() => {
     showToast('Tour gelöscht', 'success');

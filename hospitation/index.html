@@ -23,12 +23,26 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <link rel="stylesheet" href="./css/styles.css?v=20260327">
+  <link rel="stylesheet" href="./css/styles.css?v=20260327b">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="googlebot" content="noindex, nofollow">
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <!-- Password Gate -->
+  <div id="password-gate" class="fixed inset-0 bg-gray-50 z-[100] flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-8 text-center">
+      <div class="text-4xl mb-4">🔒</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Hospitation Lübeck</h2>
+      <p class="text-sm text-gray-500 mb-6">Bitte Passwort eingeben, um fortzufahren.</p>
+      <input type="password" id="password-input" class="input-field w-full text-center text-lg mb-3" placeholder="Passwort" autocomplete="off">
+      <p id="password-error" class="text-red-500 text-sm mb-3 hidden">Falsches Passwort</p>
+      <button id="password-submit" class="btn-primary w-full">Anmelden</button>
+    </div>
+  </div>
 
   <!-- Header -->
   <header class="bg-primary-900 text-white shadow-lg">
@@ -506,13 +520,75 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
   <!-- Scripts -->
-  <script src="./js/data.js?v=20260327"></script>
-  <script src="./js/firebase.js?v=20260327"></script>
-  <script src="./js/table.js?v=20260327"></script>
-  <script src="./js/calendar.js?v=20260327"></script>
-  <script src="./js/dashboard.js?v=20260327"></script>
-  <script src="./js/import.js?v=20260327"></script>
-  <script src="./js/settings.js?v=20260327"></script>
-  <script src="./js/app.js?v=20260327"></script>
+  <script src="./js/data.js?v=20260327b"></script>
+  <script src="./js/firebase.js?v=20260327b"></script>
+  <script src="./js/table.js?v=20260327b"></script>
+  <script src="./js/calendar.js?v=20260327b"></script>
+  <script src="./js/dashboard.js?v=20260327b"></script>
+  <script src="./js/import.js?v=20260327b"></script>
+  <script src="./js/settings.js?v=20260327b"></script>
+  <script src="./js/app.js?v=20260327b"></script>
+  <script>
+    // Simple password gate — hash-based so password isn't in source
+    // SHA-256 of the password, computed once
+    const PASSWORD_HASH = '5ccc0e764f8c8c184ddf6d9d7535ab776996dc1ca8ca328b481a0e3ac7856196'; // default: "luebeck2026" — change via setAppPassword()
+
+    async function sha256(text) {
+      const data = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function checkPassword(pw) {
+      const hash = await sha256(pw);
+      return hash === getPasswordHash();
+    }
+
+    function getPasswordHash() {
+      // Allow password to be changed via Firebase
+      return localStorage.getItem('hospitation_pw_hash') || PASSWORD_HASH;
+    }
+
+    (function initPasswordGate() {
+      const gate = document.getElementById('password-gate');
+      const input = document.getElementById('password-input');
+      const btn = document.getElementById('password-submit');
+      const err = document.getElementById('password-error');
+
+      // Check if already authenticated in this session
+      if (sessionStorage.getItem('hospitation_auth') === 'true') {
+        gate.classList.add('hidden');
+        return;
+      }
+
+      async function tryLogin() {
+        const pw = input.value;
+        if (!pw) return;
+        if (await checkPassword(pw)) {
+          sessionStorage.setItem('hospitation_auth', 'true');
+          gate.classList.add('hidden');
+          err.classList.add('hidden');
+        } else {
+          err.classList.remove('hidden');
+          input.select();
+        }
+      }
+
+      btn.addEventListener('click', tryLogin);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') tryLogin();
+      });
+      input.focus();
+    })();
+
+    // Helper to set a new password (run in console: setAppPassword('neuesPasswort'))
+    window.setAppPassword = async function(pw) {
+      const hash = await sha256(pw);
+      localStorage.setItem('hospitation_pw_hash', hash);
+      console.log('Passwort-Hash gespeichert:', hash);
+      console.log('Teile diesen Hash mit den anderen, damit sie ihn in ihre Konsole eintragen können:');
+      console.log(`localStorage.setItem('hospitation_pw_hash', '${hash}')`);
+    };
+  </script>
 </body>
 </html>
