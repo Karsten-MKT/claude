@@ -2,11 +2,14 @@
 // data.js - Konstanten, Datenmodell, Hilfsfunktionen
 // ============================================================
 
-const TRAINEES = [
+const DEFAULT_TRAINEES = [
   'Bärbel', 'Cornelia', 'Frauke', 'Karsten', 'Lara',
   'Liv', 'Martin', 'Max', 'Norbert', 'Stef',
   'Tanja', 'Thomas', 'Volker'
 ];
+
+// Mutable array — gets updated from Firebase
+let TRAINEES = [...DEFAULT_TRAINEES];
 
 const TOUR_TYPES = {
   'oeffentlich':          { label: 'Öffentliche Führung', short: 'Öff', category: 'oeffentlich' },

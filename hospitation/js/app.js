@@ -16,6 +16,26 @@ function onToursUpdated() {
   if (currentView === 'dashboard') renderDashboard();
 }
 
+function onTraineesUpdated() {
+  // Re-populate dashboard trainee selector
+  const dashSelect = document.getElementById('dashboard-trainee');
+  const currentVal = dashSelect.value;
+  dashSelect.innerHTML = '<option value="">Bitte wählen...</option>';
+  TRAINEES.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    dashSelect.appendChild(opt);
+  });
+  if (TRAINEES.includes(currentVal)) dashSelect.value = currentVal;
+
+  // Re-render table (updates trainee dropdowns)
+  renderTable();
+
+  // Re-render trainee management list
+  if (typeof renderTraineeManagement === 'function') renderTraineeManagement();
+}
+
 function switchView(view) {
   currentView = view;
 
@@ -36,6 +56,7 @@ function switchView(view) {
   }
 
   if (view === 'dashboard') renderDashboard();
+  if (view === 'settings' && typeof renderTraineeManagement === 'function') renderTraineeManagement();
 }
 
 // Init
@@ -51,5 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initCalendar();
   initDashboard();
   initImport();
+  initSettings();
   initFirebase();
 });

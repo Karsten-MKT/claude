@@ -23,7 +23,10 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/styles.css?v=20260327">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
@@ -57,6 +60,14 @@
         <button class="nav-tab" data-view="import">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
           <span>Import</span>
+        </button>
+        <button class="nav-tab" data-view="settings">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Verwaltung</span>
+        </button>
+        <button class="nav-tab" data-view="help">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Hilfe</span>
         </button>
       </div>
     </div>
@@ -346,18 +357,162 @@
         </div>
       </div>
     </section>
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="view-section hidden">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Azubi-Verwaltung</h2>
+        <p class="text-sm text-gray-500 mb-4">Hier kannst du Azubi-Namen bearbeiten, neue hinzufügen oder entfernen. Änderungen werden sofort für alle sichtbar.</p>
+        <div id="trainee-list" class="space-y-2 mb-4"></div>
+        <div class="flex gap-2">
+          <input type="text" id="new-trainee-name" class="input-field flex-1" placeholder="Neuen Azubi-Namen eingeben...">
+          <button id="add-trainee-btn" class="btn-primary whitespace-nowrap">Hinzufügen</button>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mt-4">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Daten verwalten</h2>
+        <button id="delete-all-tours-btn" class="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-lg transition-colors">Alle Touren löschen</button>
+        <p class="text-xs text-gray-400 mt-2">Löscht alle importierten Touren aus der Datenbank. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+      </div>
+    </section>
+
+    <!-- HELP VIEW -->
+    <section id="view-help" class="view-section hidden">
+      <div class="space-y-6">
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h2 class="text-xl font-bold text-gray-900 mb-2">Wie funktioniert das?</h2>
+          <p class="text-gray-600">Diese App hilft euch, die 24 Pflicht-Hospitationen zu organisieren. Alle Änderungen werden in Echtzeit synchronisiert &ndash; was jemand einträgt, sehen sofort alle anderen.</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            Anmeldung (Tabelle)
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p>Die Hauptansicht zeigt alle verfügbaren Führungstermine in einer Tabelle.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Anmelden:</strong> Wähle deinen Namen im Dropdown unter "Azubi 1" oder "Azubi 2" aus. Die Anmeldung wird sofort gespeichert.</li>
+              <li><strong>Abmelden:</strong> Setze das Dropdown zurück auf "-".</li>
+              <li><strong>Filtern:</strong> Oben kannst du nach Führungsart, Zeitraum oder freien Plätzen filtern.</li>
+              <li><strong>Sortieren:</strong> Klicke auf "Typ" oder "Datum" in der Kopfzeile zum Sortieren.</li>
+              <li><strong>Bearbeiten:</strong> Klicke auf das Stift-Symbol (&#9998;) rechts in der Zeile, um Datum, Uhrzeit, Guide oder Führungsart zu ändern.</li>
+            </ul>
+            <div class="bg-gray-50 rounded-lg p-3 mt-2">
+              <p class="text-xs"><strong>Farben:</strong></p>
+              <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs mt-1">
+                <span>&#9634; Weiß = Frei (0/2)</span>
+                <span class="text-yellow-700">&#9632; Gelb = 1 Platz belegt</span>
+                <span class="text-green-700">&#9632; Grün = Voll (2/2)</span>
+                <span class="text-gray-400">&#9632; Grau = Vergangen</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Kalender
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p>Die Kalenderansicht zeigt alle Termine im Monatsüberblick.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Jeder Termin wird als farbiger Block angezeigt mit Abkürzung und Belegung (z.B. "Öff 1/2").</li>
+              <li><strong>Klick auf einen Termin:</strong> Öffnet ein Detail-Fenster mit allen Infos und der Möglichkeit, sich an- oder abzumelden.</li>
+              <li>Die <strong>Legende</strong> unter dem Kalender erklärt alle Abkürzungen.</li>
+              <li>Mit den Pfeilen oben kannst du zwischen Monaten wechseln.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Dashboard
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p>Dein persönlicher Fortschritt auf einen Blick.</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Azubi wählen:</strong> Wähle oben deinen Namen aus.</li>
+              <li><strong>Gesamtfortschritt:</strong> Zeigt an, wie viele der 24 Pflicht-Hospitationen du schon absolviert hast.</li>
+              <li><strong>Kategorien:</strong> Für jede Pflicht-Kategorie (z.B. 6x Öffentliche, 6x Gänge, 3x Abend usw.) siehst du einen eigenen Fortschrittsbalken.</li>
+              <li><strong>Gänge-Details:</strong> Handwerker-, Seefahrer- und Domviertel werden einzeln gezählt (je 2 nötig).</li>
+              <li><strong>Kommende Termine:</strong> Deine nächsten angemeldeten Hospitationen.</li>
+              <li><strong>Absolvierte Termine:</strong> Vergangene Termine werden automatisch als "erledigt" gewertet.</li>
+            </ul>
+            <div class="bg-blue-50 rounded-lg p-3 mt-2">
+              <p class="text-xs text-blue-800"><strong>Tipp:</strong> Bei Öffentlichen Führungen wird gewarnt, wenn du dich mehrfach beim selben Guide anmeldest &ndash; hier sind verschiedene Guides gefordert!</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Import
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p>Neue Termine können auf drei Wegen importiert werden:</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Excel-Upload:</strong> Die Hospitationsliste als .xlsx hochladen. Die Blätter werden automatisch erkannt und zugeordnet.</li>
+              <li><strong>Gästeservice-Termine:</strong> Text aus der Gästeservice-Email einfügen &ndash; Termine werden automatisch erkannt.</li>
+              <li><strong>Einzeltermin:</strong> Manuell einen einzelnen Termin anlegen.</li>
+            </ul>
+            <p>Vor dem Import siehst du immer eine <strong>Vorschau</strong>. Bereits vorhandene Termine werden gelb markiert und können übersprungen werden.</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Verwaltung
+          </h3>
+          <div class="space-y-3 text-sm text-gray-600">
+            <p>Im Tab "Verwaltung" kannst du:</p>
+            <ul class="list-disc pl-5 space-y-1">
+              <li><strong>Azubi-Namen ändern:</strong> Klicke auf den Stift neben einem Namen, um ihn zu korrigieren.</li>
+              <li><strong>Neue Azubis hinzufügen:</strong> Trage unten einen neuen Namen ein.</li>
+              <li><strong>Azubis entfernen:</strong> Klicke auf das X neben einem Namen.</li>
+              <li><strong>Alle Touren löschen:</strong> Setzt die komplette Datenbank zurück (z.B. vor einem neuen Excel-Import).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <h3 class="text-lg font-bold text-gray-900 mb-3">Pflicht-Hospitationen (24 insgesamt)</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead><tr class="bg-gray-50"><th class="px-3 py-2 text-left">Kategorie</th><th class="px-3 py-2 text-left">Anzahl</th><th class="px-3 py-2 text-left">Hinweis</th></tr></thead>
+              <tbody>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Öffentliche Führungen</td><td class="px-3 py-2">6</td><td class="px-3 py-2 text-gray-500">Bei verschiedenen Guides!</td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Gängeführungen</td><td class="px-3 py-2">6</td><td class="px-3 py-2 text-gray-500">Je 2x Handwerker, Seefahrer, Dom</td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Abendführungen</td><td class="px-3 py-2">3</td><td class="px-3 py-2 text-gray-500">Sex&Crime, Nachtwächter, Mystica, Kostüm, Weihnachten</td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Verköstigungstouren</td><td class="px-3 py-2">1</td><td class="px-3 py-2 text-gray-500">Marzipan, Lukullisch oder Bier</td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Schülerführungen</td><td class="px-3 py-2">3</td><td class="px-3 py-2 text-gray-500"></td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Private Gruppen</td><td class="px-3 py-2">4</td><td class="px-3 py-2 text-gray-500"></td></tr>
+                <tr class="border-t"><td class="px-3 py-2 font-medium">Lübsche Verführung</td><td class="px-3 py-2">1</td><td class="px-3 py-2 text-gray-500"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
 
   <!-- Scripts -->
-  <script src="./js/data.js"></script>
-  <script src="./js/firebase.js"></script>
-  <script src="./js/table.js"></script>
-  <script src="./js/calendar.js"></script>
-  <script src="./js/dashboard.js"></script>
-  <script src="./js/import.js"></script>
-  <script src="./js/app.js"></script>
+  <script src="./js/data.js?v=20260327"></script>
+  <script src="./js/firebase.js?v=20260327"></script>
+  <script src="./js/table.js?v=20260327"></script>
+  <script src="./js/calendar.js?v=20260327"></script>
+  <script src="./js/dashboard.js?v=20260327"></script>
+  <script src="./js/import.js?v=20260327"></script>
+  <script src="./js/settings.js?v=20260327"></script>
+  <script src="./js/app.js?v=20260327"></script>
 </body>
 </html>

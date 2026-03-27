@@ -38,17 +38,61 @@ function initFirebase() {
   initTrainees();
 }
 
+let traineesRef = null;
+
 function initTrainees() {
-  const traineesRef = db.ref('hospitation/trainees');
-  traineesRef.once('value').then((snap) => {
-    if (!snap.exists()) {
-      const data = {};
-      TRAINEES.forEach(name => {
-        data[name] = { name, active: true };
-      });
-      traineesRef.set(data);
+  traineesRef = db.ref('hospitation/trainees');
+
+  traineesRef.on('value', (snap) => {
+    const data = snap.val();
+    if (!data) {
+      // First time: seed from defaults
+      const seed = {};
+      DEFAULT_TRAINEES.forEach(name => { seed[name] = { name, active: true }; });
+      traineesRef.set(seed);
+      return;
     }
-  }).catch(() => {}); // Silently fail if no permission yet
+    // Update global TRAINEES array from Firebase
+    TRAINEES = Object.values(data)
+      .filter(t => t.active !== false)
+      .map(t => t.name)
+      .sort((a, b) => a.localeCompare(b, 'de'));
+    onTraineesUpdated();
+  }, () => {}); // Silently fail if no permission
+}
+
+function addTrainee(name) {
+  if (!traineesRef || !name.trim()) return Promise.reject('Invalid');
+  const key = name.trim();
+  if (TRAINEES.includes(key)) return Promise.reject('Exists');
+  return traineesRef.child(key).set({ name: key, active: true });
+}
+
+function renameTrainee(oldName, newName) {
+  if (!traineesRef || !newName.trim()) return Promise.reject('Invalid');
+  const updates = {};
+  updates[oldName] = null; // remove old
+  updates[newName.trim()] = { name: newName.trim(), active: true };
+  // Also update all tour registrations
+  const tourUpdates = {};
+  Object.entries(toursCache).forEach(([id, tour]) => {
+    if (tour.trainee1 === oldName) tourUpdates[`${id}/trainee1`] = newName.trim();
+    if (tour.trainee2 === oldName) tourUpdates[`${id}/trainee2`] = newName.trim();
+  });
+  return traineesRef.update(updates).then(() => {
+    if (Object.keys(tourUpdates).length > 0) {
+      return toursRef.update(tourUpdates);
+    }
+  });
+}
+
+function removeTrainee(name) {
+  if (!traineesRef) return Promise.reject('No ref');
+  return traineesRef.child(name).remove();
+}
+
+function deleteAllTours() {
+  return toursRef.remove();
 }
 
 function updateConnectionStatus(connected) {
