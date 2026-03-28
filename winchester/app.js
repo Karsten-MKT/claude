@@ -123,13 +123,14 @@
     }
   }
 
-  // One-time migration: convert old array-style log to individual entries
+  // One-time migration: convert old array-style data to individual entries
   function migrateFirebaseLog() {
     if (!firebaseReady || !db) return;
+
+    // Migrate log from array to {id: entry} object
     db.ref('winchester/log').once('value', function (snapshot) {
       var data = snapshot.val();
       if (!data) return;
-      // If data is an array (numeric keys 0,1,2...) it's the old format
       if (Array.isArray(data)) {
         var updates = {};
         for (var i = 0; i < data.length; i++) {
@@ -140,7 +141,6 @@
           delete entryData.id;
           updates[id] = entryData;
         }
-        // Replace array with object keyed by id
         db.ref('winchester/log').set(updates).then(function () {
           console.log('Migrated log from array to individual entries');
         }).catch(function (e) {
@@ -148,15 +148,31 @@
         });
       }
     });
+
+    // Migrate checkedIn from array to {memberId: true} object
+    db.ref('winchester/checkedIn').once('value', function (snapshot) {
+      var data = snapshot.val();
+      if (!data) return;
+      if (Array.isArray(data)) {
+        var updates = {};
+        for (var i = 0; i < data.length; i++) {
+          if (data[i]) updates[data[i]] = true;
+        }
+        db.ref('winchester/checkedIn').set(updates).then(function () {
+          console.log('Migrated checkedIn from array to object');
+        }).catch(function (e) {
+          console.error('CheckedIn migration error:', e);
+        });
+      }
+    });
   }
 
   function syncToFirebase() {
     if (!firebaseReady || !db) return;
-    // Sync everything except log — log is synced per-entry
+    // Sync everything except log and checkedIn — those are synced per-entry
     var shared = {
       members: state.members,
       event: state.event,
-      checkedIn: state.checkedIn,
       drinks: state.drinks,
       inventory: state.inventory,
       inventoryResetAt: state.inventoryResetAt
@@ -192,11 +208,35 @@
     });
   }
 
+  // Check in a member (add to Firebase)
+  function syncCheckIn(memberId) {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/checkedIn/' + memberId).set(true).catch(function (e) {
+      console.error('Firebase checkin sync error:', e);
+    });
+  }
+
+  // Check out a member (remove from Firebase)
+  function syncCheckOut(memberId) {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/checkedIn/' + memberId).remove().catch(function (e) {
+      console.error('Firebase checkout sync error:', e);
+    });
+  }
+
+  // Clear all check-ins from Firebase
+  function clearFirebaseCheckIns() {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/checkedIn').remove().catch(function (e) {
+      console.error('Firebase checkin clear error:', e);
+    });
+  }
+
   function listenToFirebase() {
     if (!firebaseReady || !db) return;
 
     // Listen for non-log state changes
-    var stateKeys = ['members', 'event', 'checkedIn', 'drinks', 'inventory', 'inventoryResetAt'];
+    var stateKeys = ['members', 'event', 'drinks', 'inventory', 'inventoryResetAt'];
     for (var k = 0; k < stateKeys.length; k++) {
       (function (key) {
         db.ref('winchester/' + key).on('value', function (snapshot) {
@@ -213,9 +253,6 @@
                 notifyNewEvent(state.event);
               }
               lastKnownEventDate = newEventDate;
-              break;
-            case 'checkedIn':
-              state.checkedIn = data || [];
               break;
             case 'drinks':
               if (data && data.length > 0) {
@@ -250,6 +287,20 @@
           state.log.push(Object.assign({ id: keys[i] }, data[keys[i]]));
         }
         state.log.sort(function (a, b) { return a.timestamp - b.timestamp; });
+      }
+      saveLocal();
+      renderAll();
+    });
+
+    // Separate checkedIn listener — stores as {memberId: true} object
+    db.ref('winchester/checkedIn').on('value', function (snapshot) {
+      var data = snapshot.val();
+      state.checkedIn = [];
+      if (data) {
+        var keys = Object.keys(data);
+        for (var i = 0; i < keys.length; i++) {
+          state.checkedIn.push(keys[i]);
+        }
       }
       saveLocal();
       renderAll();
@@ -1036,10 +1087,12 @@
     var idx = state.checkedIn.indexOf(memberId);
     if (idx >= 0) {
       state.checkedIn.splice(idx, 1);
+      syncCheckOut(memberId);
     } else {
       state.checkedIn.push(memberId);
+      syncCheckIn(memberId);
     }
-    saveState();
+    saveLocal();
     renderCheckInModal();
     updateCheckInStatus();
     renderCheckedIn();
@@ -1605,6 +1658,7 @@
 
     state.members = state.members.filter(function (m) { return m.id !== id; });
     state.checkedIn = state.checkedIn.filter(function (cid) { return cid !== id; });
+    syncCheckOut(id);
     if (state.event && state.event.rsvp) delete state.event.rsvp[id];
     saveState();
     renderMembersList();
@@ -1679,7 +1733,6 @@
       db.ref('winchester').update({
         members: null,
         event: null,
-        checkedIn: null,
         drinks: state.drinks,
         inventory: null,
         inventoryResetAt: null
@@ -1687,6 +1740,7 @@
         console.error('Firebase reset error:', e);
       });
       clearFirebaseLog();
+      clearFirebaseCheckIns();
     }
 
     renderSettings();
