@@ -19,6 +19,22 @@
     { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 1 },
   ];
 
+  // --- Inventory config for spirits (cl-based tracking) ---
+  // Drinks that consume from a spirit inventory rather than 1:1
+  var SPIRIT_CONFIG = {
+    whiskey:     { clPerServing: 4, clPerBottle: 75, defaultUnit: 'Flaschen' },
+    shot:        { clPerServing: 4, clPerBottle: 75, defaultUnit: 'Flaschen' },
+    jgl:         { consumesFrom: 'whiskey', clPerServing: 4 },
+    irishcoffee: { consumesFrom: 'whiskey', clPerServing: 4 },
+  };
+
+  // Default units per drink type
+  var DEFAULT_UNITS = {
+    guinness: 'Dosen',
+    kilkenny: 'Dosen',
+    beer: 'Dosen',
+  };
+
   // --- Alcohol content per drink in grams ---
   var DRINK_ALCOHOL = {
     guinness: 14.6,    // 0.44l Dose, 4.2% vol
@@ -620,9 +636,12 @@
       var d = lowDrinks[i].drink;
       var s = lowDrinks[i].status;
       var cls = s.remaining <= 0 ? 'stock-empty' : 'stock-low';
+      var stockText = s.isSpirit
+        ? s.servingsLeft + ' Portionen (' + s.remainingCl + ' cl)'
+        : s.remaining + '/' + s.stock + ' ' + escapeHtml(s.unit);
       html += '<span class="low-stock-item ' + cls + '">'
         + getDrinkIcon(d) + ' ' + escapeHtml(d.name)
-        + ' <strong>' + s.remaining + '/' + s.stock + ' ' + escapeHtml(s.unit) + '</strong>'
+        + ' <strong>' + stockText + '</strong>'
         + '</span>';
     }
     document.getElementById('low-stock-list').innerHTML = html;
@@ -1220,11 +1239,17 @@
     for (var i = 0; i < sortedDrinks.length; i++) {
       var d = sortedDrinks[i];
       var sel = selectedDrinkId === d.id ? ' selected' : '';
-      var invStatus = getInventoryStatus(d.id);
+      // For drinks that consume from another spirit (jgl, irishcoffee), show the source spirit's status
+      var cfg = SPIRIT_CONFIG[d.id];
+      var invDrinkId = (cfg && cfg.consumesFrom) ? cfg.consumesFrom : d.id;
+      var invStatus = getInventoryStatus(invDrinkId);
       var stockBadge = '';
       if (invStatus) {
         var stockClass = invStatus.pct <= 0 ? 'stock-empty' : invStatus.pct <= 0.25 ? 'stock-low' : invStatus.pct <= 0.5 ? 'stock-medium' : 'stock-ok';
-        stockBadge = '<span class="stock-badge ' + stockClass + '">' + invStatus.remaining + '/' + invStatus.stock + '</span>';
+        var badgeText = invStatus.isSpirit
+          ? invStatus.servingsLeft + 'x'
+          : invStatus.remaining + '/' + invStatus.stock;
+        stockBadge = '<span class="stock-badge ' + stockClass + '">' + badgeText + '</span>';
       }
       html += '<button class="drink-card' + sel + (invStatus && invStatus.remaining <= 0 ? ' drink-empty' : '') + '" data-id="' + d.id + '">'
         + stockBadge
@@ -1262,9 +1287,27 @@
         + '<span>' + (member ? member.avatar + ' ' + escapeHtml(member.name) : (entry.memberAvatar || '👤') + ' ' + escapeHtml(entry.memberName || 'Unbekannt')) + '</span>'
         + '<span>' + getDrinkIcon(drink || { id: entry.drinkId, emoji: '' }) + ' ' + escapeHtml(entry.drinkName || 'Unbekannt') + '</span>'
         + '<span class="time">' + time + '</span>'
+        + '<button class="btn-icon btn-delete-sm recent-delete" data-id="' + entry.id + '" title="Löschen">✕</button>'
         + '</div>';
     }
     container.innerHTML = html;
+
+    var delBtns = container.querySelectorAll('.recent-delete');
+    for (var j = 0; j < delBtns.length; j++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          deleteLogEntry(btn.getAttribute('data-id'));
+        });
+      })(delBtns[j]);
+    }
+  }
+
+  function deleteLogEntry(logId) {
+    if (!confirm('Diesen Eintrag löschen?')) return;
+    state.log = state.log.filter(function (e) { return e.id !== logId; });
+    saveState();
+    renderDrinksPage();
+    showToast('Eintrag gelöscht');
   }
 
   function updateAddButton() {
@@ -1619,7 +1662,30 @@
   // ==========================================
   //  INVENTORY
   // ==========================================
-  function getConsumedSinceReset(drinkId) {
+
+  // Count how many cl of a spirit have been consumed since reset
+  // by all drinks that draw from it (e.g. whiskey, jgl, irishcoffee all draw from whiskey)
+  function getConsumedClSinceReset(spiritId) {
+    var cl = 0;
+    for (var i = 0; i < state.log.length; i++) {
+      var entry = state.log[i];
+      if (entry.timestamp < state.inventoryResetAt) continue;
+      var cfg = SPIRIT_CONFIG[entry.drinkId];
+      if (!cfg) continue;
+      // Direct spirit (e.g. whiskey logged -> whiskey inventory)
+      if (!cfg.consumesFrom && entry.drinkId === spiritId) {
+        cl += cfg.clPerServing;
+      }
+      // Indirect (e.g. jgl logged -> consumes from whiskey)
+      if (cfg.consumesFrom === spiritId) {
+        cl += cfg.clPerServing;
+      }
+    }
+    return cl;
+  }
+
+  // Count simple 1:1 consumed units since reset
+  function getConsumedUnitsSinceReset(drinkId) {
     var count = 0;
     for (var i = 0; i < state.log.length; i++) {
       if (state.log[i].drinkId === drinkId && state.log[i].timestamp >= state.inventoryResetAt) {
@@ -1629,13 +1695,41 @@
     return count;
   }
 
+  function getDefaultUnit(drinkId) {
+    if (SPIRIT_CONFIG[drinkId] && SPIRIT_CONFIG[drinkId].defaultUnit) return SPIRIT_CONFIG[drinkId].defaultUnit;
+    if (DEFAULT_UNITS[drinkId]) return DEFAULT_UNITS[drinkId];
+    return 'Stk';
+  }
+
   function getInventoryStatus(drinkId) {
     var inv = state.inventory[drinkId];
     if (!inv || !inv.stock) return null;
-    var consumed = getConsumedSinceReset(drinkId);
+    var cfg = SPIRIT_CONFIG[drinkId];
+
+    // Spirit with cl-based tracking (whiskey, shot)
+    if (cfg && cfg.clPerBottle) {
+      var totalCl = inv.stock * cfg.clPerBottle;
+      var consumedCl = getConsumedClSinceReset(drinkId);
+      var remainingCl = Math.max(0, totalCl - consumedCl);
+      var servingsTotal = Math.floor(totalCl / cfg.clPerServing);
+      var servingsLeft = Math.floor(remainingCl / cfg.clPerServing);
+      var pct = totalCl > 0 ? remainingCl / totalCl : 0;
+      return {
+        stock: inv.stock, unit: inv.unit || cfg.defaultUnit,
+        totalCl: totalCl, consumedCl: consumedCl, remainingCl: remainingCl,
+        servingsTotal: servingsTotal, servingsLeft: servingsLeft,
+        remaining: servingsLeft, pct: pct, isSpirit: true
+      };
+    }
+
+    // Drinks that only consume from another spirit (jgl, irishcoffee) — no own inventory
+    if (cfg && cfg.consumesFrom) return null;
+
+    // Simple 1:1 drinks (beer, guinness, etc.)
+    var consumed = getConsumedUnitsSinceReset(drinkId);
     var remaining = Math.max(0, inv.stock - consumed);
-    var pct = inv.stock > 0 ? remaining / inv.stock : 0;
-    return { stock: inv.stock, unit: inv.unit || 'Stk', consumed: consumed, remaining: remaining, pct: pct };
+    var pct2 = inv.stock > 0 ? remaining / inv.stock : 0;
+    return { stock: inv.stock, unit: inv.unit || getDefaultUnit(drinkId), consumed: consumed, remaining: remaining, pct: pct2, isSpirit: false };
   }
 
   function getLowStockDrinks() {
@@ -1649,37 +1743,73 @@
     return low;
   }
 
+  // Get list of drinks that have their own inventory (exclude jgl/irishcoffee which consume from whiskey)
+  function getInventoryDrinks() {
+    var drinks = [];
+    for (var i = 0; i < state.drinks.length; i++) {
+      var d = state.drinks[i];
+      var cfg = SPIRIT_CONFIG[d.id];
+      // Skip drinks that only consume from another spirit's inventory
+      if (cfg && cfg.consumesFrom) continue;
+      drinks.push(d);
+    }
+    return drinks.sort(function (a, b) { return b.points - a.points; });
+  }
+
   function renderInventoryManage() {
     var container = document.getElementById('inventory-manage');
     if (!container) return;
-    var sorted = state.drinks.slice().sort(function (a, b) { return b.points - a.points; });
+    var sorted = getInventoryDrinks();
     var html = '';
     for (var i = 0; i < sorted.length; i++) {
       var d = sorted[i];
-      var inv = state.inventory[d.id] || { stock: '', unit: 'Stk' };
+      var defaultUnit = getDefaultUnit(d.id);
+      var inv = state.inventory[d.id] || { stock: '', unit: defaultUnit };
       var status = getInventoryStatus(d.id);
+      var cfg = SPIRIT_CONFIG[d.id];
+      var isSpirit = cfg && cfg.clPerBottle;
+
       var remainingText = '';
       if (status) {
+        var label = status.isSpirit
+          ? status.servingsLeft + ' Portionen (' + status.remainingCl + ' cl) übrig'
+          : status.remaining + ' ' + escapeHtml(status.unit) + ' übrig';
         remainingText = '<span class="inventory-remaining'
           + (status.pct <= 0 ? ' stock-empty' : status.pct <= 0.25 ? ' stock-low' : status.pct <= 0.5 ? ' stock-medium' : ' stock-ok')
-          + '">' + status.remaining + ' übrig</span>';
+          + '">' + label + '</span>';
       }
+
+      // Unit options depend on drink type
+      var unitOptions = '';
+      if (isSpirit) {
+        unitOptions = '<select class="input input-sm inventory-unit" data-drink="' + d.id + '">'
+          + '<option value="Flaschen"' + (inv.unit === 'Flaschen' ? ' selected' : '') + '>Flaschen (75cl)</option>'
+          + '</select>';
+      } else {
+        unitOptions = '<select class="input input-sm inventory-unit" data-drink="' + d.id + '">'
+          + '<option value="Stk"' + (inv.unit === 'Stk' ? ' selected' : '') + '>Stk</option>'
+          + '<option value="Dosen"' + (inv.unit === 'Dosen' ? ' selected' : '') + '>Dosen</option>'
+          + '<option value="Flaschen"' + (inv.unit === 'Flaschen' ? ' selected' : '') + '>Flaschen</option>'
+          + '<option value="Fässer"' + (inv.unit === 'Fässer' ? ' selected' : '') + '>Fässer</option>'
+          + '<option value="Liter"' + (inv.unit === 'Liter' ? ' selected' : '') + '>Liter</option>'
+          + '</select>';
+      }
+
       html += '<div class="inventory-row">'
         + '<span class="inventory-drink-name">' + getDrinkIcon(d) + ' ' + escapeHtml(d.name) + '</span>'
         + '<div class="inventory-inputs">'
         + '<input type="number" class="input input-sm inventory-stock" data-drink="' + d.id + '" '
         + 'value="' + (inv.stock || '') + '" placeholder="0" min="0" step="1">'
-        + '<select class="input input-sm inventory-unit" data-drink="' + d.id + '">'
-        + '<option value="Stk"' + (inv.unit === 'Stk' ? ' selected' : '') + '>Stk</option>'
-        + '<option value="Dosen"' + (inv.unit === 'Dosen' ? ' selected' : '') + '>Dosen</option>'
-        + '<option value="Flaschen"' + (inv.unit === 'Flaschen' ? ' selected' : '') + '>Flaschen</option>'
-        + '<option value="Fässer"' + (inv.unit === 'Fässer' ? ' selected' : '') + '>Fässer</option>'
-        + '<option value="Liter"' + (inv.unit === 'Liter' ? ' selected' : '') + '>Liter</option>'
-        + '</select>'
+        + unitOptions
+        + '<button class="btn btn-gold btn-sm inventory-add-btn" data-drink="' + d.id + '" title="Nachfüllen">+</button>'
         + '</div>'
         + remainingText
         + '</div>';
     }
+
+    // Note about JGL/Irish Coffee
+    html += '<p class="hint" style="margin-top:8px;">JGL und Irish Coffee werden automatisch vom Whiskey-Vorrat abgezogen (4 cl pro Portion).</p>';
+
     container.innerHTML = html;
 
     // Attach change listeners
@@ -1688,7 +1818,8 @@
       (function (input) {
         input.addEventListener('change', function () {
           var drinkId = input.getAttribute('data-drink');
-          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: 'Stk' };
+          var defUnit = getDefaultUnit(drinkId);
+          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: defUnit };
           state.inventory[drinkId].stock = parseInt(input.value) || 0;
           saveState();
           renderInventoryManage();
@@ -1701,12 +1832,45 @@
       (function (sel) {
         sel.addEventListener('change', function () {
           var drinkId = sel.getAttribute('data-drink');
-          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: 'Stk' };
+          var defUnit = getDefaultUnit(drinkId);
+          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: defUnit };
           state.inventory[drinkId].unit = sel.value;
           saveState();
         });
       })(unitSelects[u]);
     }
+
+    // Restock buttons
+    var addBtns = container.querySelectorAll('.inventory-add-btn');
+    for (var a = 0; a < addBtns.length; a++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          restockDrink(btn.getAttribute('data-drink'));
+        });
+      })(addBtns[a]);
+    }
+  }
+
+  function restockDrink(drinkId) {
+    var drink = findDrink(drinkId);
+    var unit = (state.inventory[drinkId] && state.inventory[drinkId].unit) || getDefaultUnit(drinkId);
+    var amount = prompt((drink ? drink.name : drinkId) + ': Wieviel nachfüllen? (' + unit + ')');
+    if (!amount) return;
+    var num = parseInt(amount);
+    if (isNaN(num) || num <= 0) { showToast('Ungültige Menge'); return; }
+    if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: unit };
+    state.inventory[drinkId].stock += num;
+    saveState();
+    renderInventoryManage();
+    showToast(num + ' ' + unit + ' ' + (drink ? drink.name : drinkId) + ' hinzugefügt');
+  }
+
+  function resetLog() {
+    if (!confirm('Alle Runden wirklich löschen? Die Rangliste wird zurückgesetzt.')) return;
+    state.log = [];
+    saveState();
+    renderAll();
+    showToast('Runden-Log gelöscht');
   }
 
   function resetInventory() {
@@ -1743,6 +1907,7 @@
     saveBacData: saveBacData,
     dismissEventNotification: dismissEventNotification,
     resetInventory: resetInventory,
+    resetLog: resetLog,
   };
 
   // ==========================================

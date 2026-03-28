@@ -85,7 +85,7 @@
       </div>
 
       <div id="low-stock-warning" class="card low-stock-card" style="display:none;">
-        <h2>Getränkevorrat</h2>
+        <h2>Wenig Vorrat</h2>
         <div id="low-stock-list" class="low-stock-list"></div>
       </div>
 
@@ -196,7 +196,8 @@
 
       <div class="card">
         <h3>Daten</h3>
-        <button class="btn btn-danger" onclick="app.resetData()">Alle Daten zurücksetzen</button>
+        <button class="btn btn-secondary btn-danger-outline" onclick="app.resetLog()">Runden-Log löschen</button>
+        <button class="btn btn-danger" onclick="app.resetData()" style="margin-top: 8px;">Alle Daten zurücksetzen</button>
       </div>
     </section>
   </main>
