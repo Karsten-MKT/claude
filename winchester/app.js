@@ -17,6 +17,7 @@
     { id: 'jgl', name: 'JGL', emoji: '🍹', points: 3 },
     { id: 'wine', name: 'Wein', emoji: '🍷', points: 2 },
     { id: 'softdrink', name: 'Softdrink', emoji: '🥤', points: 1 },
+    { id: 'gingerale', name: 'Ginger Ale', emoji: '🫚', points: 1 },
   ];
 
   // --- Inventory config for spirits (cl-based tracking) ---
@@ -47,6 +48,7 @@
     jgl: 12.6,         // 4cl Whiskey + Ginger Ale + Limette
     wine: 18.9,        // 0.2l, 12% vol
     softdrink: 0,
+    gingerale: 0,
   };
 
   const AVATARS = [
@@ -267,6 +269,15 @@
               state.log[k].memberAvatar = logMember.avatar;
             }
           }
+        }
+
+        // Migrate: add Ginger Ale if missing
+        var hasGingerAle = false;
+        for (var g = 0; g < state.drinks.length; g++) {
+          if (state.drinks[g].id === 'gingerale') { hasGingerAle = true; break; }
+        }
+        if (!hasGingerAle) {
+          state.drinks.push({ id: 'gingerale', name: 'Ginger Ale', emoji: '\uD83E\uDEDA', points: 1 });
         }
 
         // Migrate: increase all drink points by 1 (softdrink 0->1, beer 1->2, etc.)
@@ -1736,11 +1747,26 @@
     return { stock: inv.stock, unit: inv.unit || getDefaultUnit(drinkId), consumed: consumed, remaining: remaining, pct: pct2, isSpirit: false };
   }
 
+  // Absolute low-stock thresholds (remaining units) for home page warning
+  var LOW_STOCK_THRESHOLDS = {
+    guinness: 10,
+    gingerale: 2,
+  };
+
   function getLowStockDrinks() {
     var low = [];
     for (var i = 0; i < state.drinks.length; i++) {
-      var s = getInventoryStatus(state.drinks[i].id);
-      if (s && s.pct <= 0.25) {
+      var id = state.drinks[i].id;
+      var s = getInventoryStatus(id);
+      if (!s) continue;
+      var threshold = LOW_STOCK_THRESHOLDS[id];
+      if (threshold !== undefined) {
+        // Absolute threshold
+        if (s.remaining < threshold) {
+          low.push({ drink: state.drinks[i], status: s });
+        }
+      } else if (s.pct <= 0.25) {
+        // Default: percentage-based
         low.push({ drink: state.drinks[i], status: s });
       }
     }
