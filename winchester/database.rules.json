@@ -23,6 +23,12 @@
           ".validate": "newData.hasChildren(['dataUrl', 'uploadedBy', 'timestamp'])"
         }
       },
+      "inventory": {
+        ".validate": true
+      },
+      "inventoryResetAt": {
+        ".validate": "newData.isNumber()"
+      },
       "$other": {
         ".validate": false
       }
