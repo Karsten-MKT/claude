@@ -108,6 +108,17 @@
   var db = null;
   var firebaseReady = false;
   var ignorePhotoUpdate = false;
+  var renderDebounceTimer = null;
+
+  // Debounced save+render to avoid rapid-fire when multiple Firebase listeners fire
+  function debouncedSaveAndRender() {
+    saveLocal();
+    if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+    renderDebounceTimer = setTimeout(function () {
+      renderDebounceTimer = null;
+      renderAll();
+    }, 50);
+  }
 
   function initFirebase() {
     if (!FIREBASE_CONFIG.databaseURL || typeof firebase === 'undefined') return;
@@ -169,17 +180,25 @@
 
   function syncToFirebase() {
     if (!firebaseReady || !db) return;
-    // Sync everything except log and checkedIn — those are synced per-entry
-    var shared = {
+    // Write each field directly to its own path for reliable sub-listener triggering
+    var fields = {
       members: state.members,
       event: state.event,
       drinks: state.drinks,
       inventory: state.inventory,
       inventoryResetAt: state.inventoryResetAt
     };
-    db.ref('winchester').update(shared).catch(function (e) {
-      console.error('Firebase sync error:', e);
-    });
+    var keys = Object.keys(fields);
+    for (var i = 0; i < keys.length; i++) {
+      (function (key) {
+        var val = fields[key];
+        // Firebase deletes null/undefined — write empty marker to preserve structure
+        if (val === null || val === undefined) val = null;
+        db.ref('winchester/' + key).set(val).catch(function (e) {
+          console.error('Firebase sync error (' + key + '):', e);
+        });
+      })(keys[i]);
+    }
   }
 
   // Write a single log entry to Firebase
@@ -261,18 +280,13 @@
               }
               break;
             case 'inventory':
-              if (data !== undefined && data !== null) {
-                state.inventory = data;
-              }
+              state.inventory = data || {};
               break;
             case 'inventoryResetAt':
-              if (data !== undefined && data !== null) {
-                state.inventoryResetAt = data;
-              }
+              state.inventoryResetAt = data || 0;
               break;
           }
-          saveLocal();
-          renderAll();
+          debouncedSaveAndRender();
         });
       })(stateKeys[k]);
     }
@@ -288,8 +302,7 @@
         }
         state.log.sort(function (a, b) { return a.timestamp - b.timestamp; });
       }
-      saveLocal();
-      renderAll();
+      debouncedSaveAndRender();
     });
 
     // Separate checkedIn listener — stores as {memberId: true} object
@@ -302,8 +315,7 @@
           state.checkedIn.push(keys[i]);
         }
       }
-      saveLocal();
-      renderAll();
+      debouncedSaveAndRender();
     });
 
     // Separate photo listener — avoids race conditions with main state
