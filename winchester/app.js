@@ -105,7 +105,7 @@
 
   var db = null;
   var firebaseReady = false;
-  var ignoreNextFirebaseUpdate = false;
+  var ignoreFirebaseCounter = 0;
   var ignorePhotoUpdate = false;
 
   function initFirebase() {
@@ -123,7 +123,7 @@
 
   function syncToFirebase() {
     if (!firebaseReady || !db) return;
-    ignoreNextFirebaseUpdate = true;
+    ignoreFirebaseCounter++;
     var shared = {
       members: state.members,
       log: state.log,
@@ -134,10 +134,10 @@
       inventoryResetAt: state.inventoryResetAt
     };
     db.ref('winchester').update(shared).then(function () {
-      setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
+      setTimeout(function () { ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1); }, 500);
     }).catch(function (e) {
       console.error('Firebase sync error:', e);
-      ignoreNextFirebaseUpdate = false;
+      ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1);
     });
   }
 
@@ -145,7 +145,7 @@
     if (!firebaseReady || !db) return;
     // Main state listener (excludes photos)
     db.ref('winchester').on('value', function (snapshot) {
-      if (ignoreNextFirebaseUpdate) return;
+      if (ignoreFirebaseCounter > 0) return;
       var data = snapshot.val();
       if (!data) return;
       var oldEventDate = state.event ? state.event.date : null;
@@ -153,8 +153,12 @@
       state.log = data.log || [];
       state.event = data.event || null;
       state.checkedIn = data.checkedIn || [];
-      state.inventory = data.inventory || {};
-      state.inventoryResetAt = data.inventoryResetAt || 0;
+      if (data.inventory !== undefined && data.inventory !== null) {
+        state.inventory = data.inventory;
+      }
+      if (data.inventoryResetAt !== undefined && data.inventoryResetAt !== null) {
+        state.inventoryResetAt = data.inventoryResetAt;
+      }
       if (data.drinks && data.drinks.length > 0) {
         state.drinks = data.drinks;
         if (migrateDrinkPoints()) {
@@ -1580,7 +1584,7 @@
     saveLocal();
 
     if (firebaseReady && db) {
-      ignoreNextFirebaseUpdate = true;
+      ignoreFirebaseCounter++;
       db.ref('winchester').update({
         members: null,
         log: null,
@@ -1590,10 +1594,10 @@
         inventory: null,
         inventoryResetAt: null
       }).then(function () {
-        setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 1000);
+        setTimeout(function () { ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1); }, 1000);
       }).catch(function (e) {
         console.error('Firebase reset error:', e);
-        ignoreNextFirebaseUpdate = false;
+        ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1);
       });
     }
 
