@@ -107,7 +107,6 @@
 
   var db = null;
   var firebaseReady = false;
-  var ignoreFirebaseCounter = 0;
   var ignorePhotoUpdate = false;
 
   function initFirebase() {
@@ -116,6 +115,7 @@
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
       firebaseReady = true;
+      migrateFirebaseLog();
       listenToFirebase();
       console.log('Firebase connected');
     } catch (e) {
@@ -123,60 +123,138 @@
     }
   }
 
+  // One-time migration: convert old array-style log to individual entries
+  function migrateFirebaseLog() {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/log').once('value', function (snapshot) {
+      var data = snapshot.val();
+      if (!data) return;
+      // If data is an array (numeric keys 0,1,2...) it's the old format
+      if (Array.isArray(data)) {
+        var updates = {};
+        for (var i = 0; i < data.length; i++) {
+          if (!data[i]) continue;
+          var entry = data[i];
+          var id = entry.id || uuid();
+          var entryData = Object.assign({}, entry);
+          delete entryData.id;
+          updates[id] = entryData;
+        }
+        // Replace array with object keyed by id
+        db.ref('winchester/log').set(updates).then(function () {
+          console.log('Migrated log from array to individual entries');
+        }).catch(function (e) {
+          console.error('Log migration error:', e);
+        });
+      }
+    });
+  }
+
   function syncToFirebase() {
     if (!firebaseReady || !db) return;
-    ignoreFirebaseCounter++;
+    // Sync everything except log — log is synced per-entry
     var shared = {
       members: state.members,
-      log: state.log,
       event: state.event,
       checkedIn: state.checkedIn,
       drinks: state.drinks,
       inventory: state.inventory,
       inventoryResetAt: state.inventoryResetAt
     };
-    db.ref('winchester').update(shared).then(function () {
-      setTimeout(function () { ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1); }, 500);
-    }).catch(function (e) {
+    db.ref('winchester').update(shared).catch(function (e) {
       console.error('Firebase sync error:', e);
-      ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1);
+    });
+  }
+
+  // Write a single log entry to Firebase
+  function syncLogEntry(entry) {
+    if (!firebaseReady || !db) return;
+    var data = Object.assign({}, entry);
+    delete data.id; // id is the key, not stored in value
+    db.ref('winchester/log/' + entry.id).set(data).catch(function (e) {
+      console.error('Firebase log sync error:', e);
+    });
+  }
+
+  // Remove a single log entry from Firebase
+  function removeLogEntry(entryId) {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/log/' + entryId).remove().catch(function (e) {
+      console.error('Firebase log remove error:', e);
+    });
+  }
+
+  // Remove all log entries from Firebase
+  function clearFirebaseLog() {
+    if (!firebaseReady || !db) return;
+    db.ref('winchester/log').remove().catch(function (e) {
+      console.error('Firebase log clear error:', e);
     });
   }
 
   function listenToFirebase() {
     if (!firebaseReady || !db) return;
-    // Main state listener (excludes photos)
-    db.ref('winchester').on('value', function (snapshot) {
-      if (ignoreFirebaseCounter > 0) return;
-      var data = snapshot.val();
-      if (!data) return;
-      var oldEventDate = state.event ? state.event.date : null;
-      state.members = data.members || [];
-      state.log = data.log || [];
-      state.event = data.event || null;
-      state.checkedIn = data.checkedIn || [];
-      if (data.inventory !== undefined && data.inventory !== null) {
-        state.inventory = data.inventory;
-      }
-      if (data.inventoryResetAt !== undefined && data.inventoryResetAt !== null) {
-        state.inventoryResetAt = data.inventoryResetAt;
-      }
-      if (data.drinks && data.drinks.length > 0) {
-        state.drinks = data.drinks;
-        if (migrateDrinkPoints()) {
-          syncToFirebase();
-        }
-      }
-      // Check if a new event was set by another device
-      var newEventDate = state.event ? state.event.date : null;
-      if (newEventDate && newEventDate !== oldEventDate && newEventDate !== lastKnownEventDate) {
-        notifyNewEvent(state.event);
-      }
-      lastKnownEventDate = newEventDate;
 
+    // Listen for non-log state changes
+    var stateKeys = ['members', 'event', 'checkedIn', 'drinks', 'inventory', 'inventoryResetAt'];
+    for (var k = 0; k < stateKeys.length; k++) {
+      (function (key) {
+        db.ref('winchester/' + key).on('value', function (snapshot) {
+          var data = snapshot.val();
+          switch (key) {
+            case 'members':
+              state.members = data || [];
+              break;
+            case 'event':
+              var oldEventDate = state.event ? state.event.date : null;
+              state.event = data || null;
+              var newEventDate = state.event ? state.event.date : null;
+              if (newEventDate && newEventDate !== oldEventDate && newEventDate !== lastKnownEventDate) {
+                notifyNewEvent(state.event);
+              }
+              lastKnownEventDate = newEventDate;
+              break;
+            case 'checkedIn':
+              state.checkedIn = data || [];
+              break;
+            case 'drinks':
+              if (data && data.length > 0) {
+                state.drinks = data;
+                migrateDrinkPoints();
+              }
+              break;
+            case 'inventory':
+              if (data !== undefined && data !== null) {
+                state.inventory = data;
+              }
+              break;
+            case 'inventoryResetAt':
+              if (data !== undefined && data !== null) {
+                state.inventoryResetAt = data;
+              }
+              break;
+          }
+          saveLocal();
+          renderAll();
+        });
+      })(stateKeys[k]);
+    }
+
+    // Separate log listener — reconstructs array from individual entries
+    db.ref('winchester/log').on('value', function (snapshot) {
+      var data = snapshot.val();
+      state.log = [];
+      if (data) {
+        var keys = Object.keys(data);
+        for (var i = 0; i < keys.length; i++) {
+          state.log.push(Object.assign({ id: keys[i] }, data[keys[i]]));
+        }
+        state.log.sort(function (a, b) { return a.timestamp - b.timestamp; });
+      }
       saveLocal();
       renderAll();
     });
+
     // Separate photo listener — avoids race conditions with main state
     db.ref('winchester/photos').on('value', function (snapshot) {
       if (ignorePhotoUpdate) return;
@@ -1320,7 +1398,8 @@
   function deleteLogEntry(logId) {
     if (!confirm('Diesen Eintrag löschen?')) return;
     state.log = state.log.filter(function (e) { return e.id !== logId; });
-    saveState();
+    saveLocal();
+    removeLogEntry(logId);
     renderDrinksPage();
     showToast('Eintrag gelöscht');
   }
@@ -1347,7 +1426,7 @@
     var drink = findDrink(selectedDrinkId);
     if (!member || !drink) return;
 
-    state.log.push({
+    var entry = {
       id: uuid(),
       memberId: member.id,
       memberName: member.name,
@@ -1356,9 +1435,11 @@
       drinkName: drink.name,
       points: drink.points,
       timestamp: Date.now(),
-    });
+    };
+    state.log.push(entry);
 
-    saveState();
+    saveLocal();
+    syncLogEntry(entry);
     showToast(drink.emoji + ' ' + drink.name + ' für ' + member.name + '! +' + drink.points + ' Pkt');
 
     // Animate button
@@ -1595,21 +1676,17 @@
     saveLocal();
 
     if (firebaseReady && db) {
-      ignoreFirebaseCounter++;
       db.ref('winchester').update({
         members: null,
-        log: null,
         event: null,
         checkedIn: null,
         drinks: state.drinks,
         inventory: null,
         inventoryResetAt: null
-      }).then(function () {
-        setTimeout(function () { ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1); }, 1000);
       }).catch(function (e) {
         console.error('Firebase reset error:', e);
-        ignoreFirebaseCounter = Math.max(0, ignoreFirebaseCounter - 1);
       });
+      clearFirebaseLog();
     }
 
     renderSettings();
@@ -1898,7 +1975,8 @@
   function resetLog() {
     if (!confirm('Alle Runden wirklich löschen? Die Rangliste wird zurückgesetzt.')) return;
     state.log = [];
-    saveState();
+    saveLocal();
+    clearFirebaseLog();
     renderAll();
     showToast('Runden-Log gelöscht');
   }
