@@ -84,6 +84,11 @@
         <p id="no-event-msg" class="no-event">Kein Termin geplant</p>
       </div>
 
+      <div id="low-stock-warning" class="card low-stock-card" style="display:none;">
+        <h2>Getränkevorrat</h2>
+        <div id="low-stock-list" class="low-stock-list"></div>
+      </div>
+
       <div id="rsvp-status" class="card rsvp-card" style="display:none;">
         <h2>Wer kommt?</h2>
         <div id="rsvp-list"></div>
@@ -180,6 +185,13 @@
       <div class="card">
         <h3>Getränkekarte</h3>
         <div id="drinks-manage" class="drinks-manage-list"></div>
+      </div>
+
+      <div class="card">
+        <h3>Getränkevorrat</h3>
+        <p class="hint">Trage ein, wieviel von jedem Getränk vorhanden ist. Der Verbrauch wird automatisch aus den geloggten Runden berechnet.</p>
+        <div id="inventory-manage" class="inventory-list"></div>
+        <button class="btn btn-secondary" onclick="app.resetInventory()" style="margin-top: 12px;">Vorrat zurücksetzen</button>
       </div>
 
       <div class="card">

@@ -48,6 +48,8 @@
     pubLocation: null,
     checkedIn: [],
     photos: [],
+    inventory: {},          // { drinkId: { stock: number, unit: string } }
+    inventoryResetAt: 0,    // timestamp — only count log entries after this
   };
 
   var selectedMemberId = null;
@@ -111,7 +113,9 @@
       log: state.log,
       event: state.event,
       checkedIn: state.checkedIn,
-      drinks: state.drinks
+      drinks: state.drinks,
+      inventory: state.inventory,
+      inventoryResetAt: state.inventoryResetAt
     };
     db.ref('winchester').update(shared).then(function () {
       setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 500);
@@ -133,6 +137,8 @@
       state.log = data.log || [];
       state.event = data.event || null;
       state.checkedIn = data.checkedIn || [];
+      state.inventory = data.inventory || {};
+      state.inventoryResetAt = data.inventoryResetAt || 0;
       if (data.drinks && data.drinks.length > 0) {
         state.drinks = data.drinks;
         if (migrateDrinkPoints()) {
@@ -210,6 +216,8 @@
         state.pubLocation = parsed.pubLocation || null;
         state.checkedIn = parsed.checkedIn || [];
         state.photos = parsed.photos || [];
+        state.inventory = parsed.inventory || {};
+        state.inventoryResetAt = parsed.inventoryResetAt || 0;
 
         // Migrate: move rsvp from top-level into event object
         if (parsed.rsvp && parsed.event && !parsed.event.rsvp) {
@@ -351,6 +359,7 @@
     renderCheckedIn();
     renderCountdown();
     renderRsvpStatus();
+    renderLowStockWarning();
   }
 
   function updateCheckInStatus() {
@@ -595,6 +604,28 @@
     }
 
     document.getElementById('rsvp-list').innerHTML = html;
+  }
+
+  function renderLowStockWarning() {
+    var container = document.getElementById('low-stock-warning');
+    if (!container) return;
+    var lowDrinks = getLowStockDrinks();
+    if (lowDrinks.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    container.style.display = 'block';
+    var html = '';
+    for (var i = 0; i < lowDrinks.length; i++) {
+      var d = lowDrinks[i].drink;
+      var s = lowDrinks[i].status;
+      var cls = s.remaining <= 0 ? 'stock-empty' : 'stock-low';
+      html += '<span class="low-stock-item ' + cls + '">'
+        + getDrinkIcon(d) + ' ' + escapeHtml(d.name)
+        + ' <strong>' + s.remaining + '/' + s.stock + ' ' + escapeHtml(s.unit) + '</strong>'
+        + '</span>';
+    }
+    document.getElementById('low-stock-list').innerHTML = html;
   }
 
   function openRsvp() {
@@ -1189,7 +1220,14 @@
     for (var i = 0; i < sortedDrinks.length; i++) {
       var d = sortedDrinks[i];
       var sel = selectedDrinkId === d.id ? ' selected' : '';
-      html += '<button class="drink-card' + sel + '" data-id="' + d.id + '">'
+      var invStatus = getInventoryStatus(d.id);
+      var stockBadge = '';
+      if (invStatus) {
+        var stockClass = invStatus.pct <= 0 ? 'stock-empty' : invStatus.pct <= 0.25 ? 'stock-low' : invStatus.pct <= 0.5 ? 'stock-medium' : 'stock-ok';
+        stockBadge = '<span class="stock-badge ' + stockClass + '">' + invStatus.remaining + '/' + invStatus.stock + '</span>';
+      }
+      html += '<button class="drink-card' + sel + (invStatus && invStatus.remaining <= 0 ? ' drink-empty' : '') + '" data-id="' + d.id + '">'
+        + stockBadge
         + '<span class="drink-emoji">' + getDrinkIcon(d) + '</span>'
         + '<span class="drink-name">' + escapeHtml(d.name) + '</span>'
         + '<span class="drink-points">' + d.points + ' Pkt</span>'
@@ -1281,6 +1319,7 @@
     renderMembersList();
     renderNewMemberEmojiPicker();
     renderDrinksManage();
+    renderInventoryManage();
     renderLocationStatus();
 
     if (state.event) {
@@ -1487,6 +1526,8 @@
       pubLocation: null,
       checkedIn: [],
       photos: savedPhotos,
+      inventory: {},
+      inventoryResetAt: 0,
     };
     bacProfiles = {};
     saveBacProfiles();
@@ -1502,7 +1543,9 @@
         log: null,
         event: null,
         checkedIn: null,
-        drinks: state.drinks
+        drinks: state.drinks,
+        inventory: null,
+        inventoryResetAt: null
       }).then(function () {
         setTimeout(function () { ignoreNextFirebaseUpdate = false; }, 1000);
       }).catch(function (e) {
@@ -1574,6 +1617,108 @@
   }
 
   // ==========================================
+  //  INVENTORY
+  // ==========================================
+  function getConsumedSinceReset(drinkId) {
+    var count = 0;
+    for (var i = 0; i < state.log.length; i++) {
+      if (state.log[i].drinkId === drinkId && state.log[i].timestamp >= state.inventoryResetAt) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  function getInventoryStatus(drinkId) {
+    var inv = state.inventory[drinkId];
+    if (!inv || !inv.stock) return null;
+    var consumed = getConsumedSinceReset(drinkId);
+    var remaining = Math.max(0, inv.stock - consumed);
+    var pct = inv.stock > 0 ? remaining / inv.stock : 0;
+    return { stock: inv.stock, unit: inv.unit || 'Stk', consumed: consumed, remaining: remaining, pct: pct };
+  }
+
+  function getLowStockDrinks() {
+    var low = [];
+    for (var i = 0; i < state.drinks.length; i++) {
+      var s = getInventoryStatus(state.drinks[i].id);
+      if (s && s.pct <= 0.25) {
+        low.push({ drink: state.drinks[i], status: s });
+      }
+    }
+    return low;
+  }
+
+  function renderInventoryManage() {
+    var container = document.getElementById('inventory-manage');
+    if (!container) return;
+    var sorted = state.drinks.slice().sort(function (a, b) { return b.points - a.points; });
+    var html = '';
+    for (var i = 0; i < sorted.length; i++) {
+      var d = sorted[i];
+      var inv = state.inventory[d.id] || { stock: '', unit: 'Stk' };
+      var status = getInventoryStatus(d.id);
+      var remainingText = '';
+      if (status) {
+        remainingText = '<span class="inventory-remaining'
+          + (status.pct <= 0 ? ' stock-empty' : status.pct <= 0.25 ? ' stock-low' : status.pct <= 0.5 ? ' stock-medium' : ' stock-ok')
+          + '">' + status.remaining + ' übrig</span>';
+      }
+      html += '<div class="inventory-row">'
+        + '<span class="inventory-drink-name">' + getDrinkIcon(d) + ' ' + escapeHtml(d.name) + '</span>'
+        + '<div class="inventory-inputs">'
+        + '<input type="number" class="input input-sm inventory-stock" data-drink="' + d.id + '" '
+        + 'value="' + (inv.stock || '') + '" placeholder="0" min="0" step="1">'
+        + '<select class="input input-sm inventory-unit" data-drink="' + d.id + '">'
+        + '<option value="Stk"' + (inv.unit === 'Stk' ? ' selected' : '') + '>Stk</option>'
+        + '<option value="Dosen"' + (inv.unit === 'Dosen' ? ' selected' : '') + '>Dosen</option>'
+        + '<option value="Flaschen"' + (inv.unit === 'Flaschen' ? ' selected' : '') + '>Flaschen</option>'
+        + '<option value="Fässer"' + (inv.unit === 'Fässer' ? ' selected' : '') + '>Fässer</option>'
+        + '<option value="Liter"' + (inv.unit === 'Liter' ? ' selected' : '') + '>Liter</option>'
+        + '</select>'
+        + '</div>'
+        + remainingText
+        + '</div>';
+    }
+    container.innerHTML = html;
+
+    // Attach change listeners
+    var stockInputs = container.querySelectorAll('.inventory-stock');
+    for (var s = 0; s < stockInputs.length; s++) {
+      (function (input) {
+        input.addEventListener('change', function () {
+          var drinkId = input.getAttribute('data-drink');
+          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: 'Stk' };
+          state.inventory[drinkId].stock = parseInt(input.value) || 0;
+          saveState();
+          renderInventoryManage();
+        });
+      })(stockInputs[s]);
+    }
+
+    var unitSelects = container.querySelectorAll('.inventory-unit');
+    for (var u = 0; u < unitSelects.length; u++) {
+      (function (sel) {
+        sel.addEventListener('change', function () {
+          var drinkId = sel.getAttribute('data-drink');
+          if (!state.inventory[drinkId]) state.inventory[drinkId] = { stock: 0, unit: 'Stk' };
+          state.inventory[drinkId].unit = sel.value;
+          saveState();
+        });
+      })(unitSelects[u]);
+    }
+  }
+
+  function resetInventory() {
+    if (!confirm('Vorrat zurücksetzen? Die Zählung beginnt dann von vorne.')) return;
+    state.inventory = {};
+    state.inventoryResetAt = Date.now();
+    saveState();
+    renderInventoryManage();
+    showToast('Vorrat zurückgesetzt');
+  }
+
+  // ==========================================
   //  PUBLIC API (for onclick handlers)
   // ==========================================
   window.app = {
@@ -1597,6 +1742,7 @@
     selectBacGender: selectBacGender,
     saveBacData: saveBacData,
     dismissEventNotification: dismissEventNotification,
+    resetInventory: resetInventory,
   };
 
   // ==========================================

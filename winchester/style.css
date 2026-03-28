@@ -1394,3 +1394,141 @@ body {
     grid-template-columns: repeat(5, 1fr);
   }
 }
+
+/* ===== Inventory Management (Settings) ===== */
+.inventory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.inventory-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.inventory-row:last-child {
+  border-bottom: none;
+}
+
+.inventory-drink-name {
+  font-size: 13px;
+  min-width: 100px;
+  flex: 1;
+}
+
+.inventory-inputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.input-sm {
+  width: 60px;
+  padding: 6px 8px !important;
+  font-size: 13px !important;
+}
+
+select.input-sm {
+  width: 80px;
+}
+
+.inventory-remaining {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: 100%;
+  text-align: right;
+}
+
+.inventory-remaining.stock-ok {
+  color: var(--green-light);
+}
+
+.inventory-remaining.stock-medium {
+  color: var(--gold);
+}
+
+.inventory-remaining.stock-low {
+  color: var(--danger-light);
+}
+
+.inventory-remaining.stock-empty {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* ===== Stock Badge on Drink Cards ===== */
+.drink-card {
+  position: relative;
+}
+
+.stock-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+.stock-badge.stock-ok {
+  background: var(--green-dark);
+  color: var(--green-glow);
+}
+
+.stock-badge.stock-medium {
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--gold);
+}
+
+.stock-badge.stock-low {
+  background: rgba(139, 32, 32, 0.3);
+  color: var(--danger-light);
+}
+
+.stock-badge.stock-empty {
+  background: rgba(90, 84, 73, 0.3);
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.drink-card.drink-empty {
+  opacity: 0.45;
+}
+
+/* ===== Low Stock Warning (Home) ===== */
+.low-stock-card h2 {
+  margin-bottom: 8px;
+}
+
+.low-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.low-stock-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+.low-stock-item.stock-low {
+  color: var(--danger-light);
+}
+
+.low-stock-item.stock-empty {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
