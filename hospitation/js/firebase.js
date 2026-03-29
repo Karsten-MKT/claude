@@ -16,6 +16,17 @@ function initFirebase() {
   db = firebase.database();
   toursRef = db.ref('hospitation/tours');
 
+  // Anonymous Auth — required by security rules
+  firebase.auth().signInAnonymously().then(() => {
+    startFirebaseListeners();
+  }).catch((e) => {
+    console.error('Firebase auth error:', e);
+    // Fallback: try without auth (works if rules are still open)
+    startFirebaseListeners();
+  });
+}
+
+function startFirebaseListeners() {
   toursRef.on('value', (snapshot) => {
     toursCache = snapshot.val() || {};
     updateConnectionStatus(true);

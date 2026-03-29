@@ -125,10 +125,20 @@
     try {
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.database();
-      firebaseReady = true;
-      migrateFirebaseLog();
-      listenToFirebase();
-      console.log('Firebase connected');
+
+      // Anonymous Auth — required by security rules
+      firebase.auth().signInAnonymously().then(function () {
+        firebaseReady = true;
+        migrateFirebaseLog();
+        listenToFirebase();
+        console.log('Firebase connected (anonymous auth)');
+      }).catch(function (e) {
+        console.error('Firebase auth error:', e);
+        // Fallback: try without auth (works if rules are still open)
+        firebaseReady = true;
+        migrateFirebaseLog();
+        listenToFirebase();
+      });
     } catch (e) {
       console.error('Firebase init error:', e);
     }
