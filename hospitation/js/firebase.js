@@ -3,7 +3,13 @@
 // ============================================================
 
 const FIREBASE_CONFIG = {
-  databaseURL: 'https://winchester-app-c8241-default-rtdb.europe-west1.firebasedatabase.app'
+  apiKey: 'AIzaSyCSkuAZ0jBvFmdl0p6PbUVvYVNkzhy4agA',
+  authDomain: 'winchester-app-c8241.firebaseapp.com',
+  databaseURL: 'https://winchester-app-c8241-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'winchester-app-c8241',
+  storageBucket: 'winchester-app-c8241.firebasestorage.app',
+  messagingSenderId: '726403885973',
+  appId: '1:726403885973:web:4144cf61f688ddb458a49c'
 };
 
 let db = null;
