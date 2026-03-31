@@ -32,9 +32,11 @@ function renderDashboard() {
   const completed = myTours.filter(t => isDatePast(t.date));
   const upcoming = myTours.filter(t => !isDatePast(t.date)).sort((a, b) => a.date.localeCompare(b.date));
 
-  // Count per category
+  // Count per category (completed + upcoming)
   const categoryCounts = {};
+  const categoryUpcoming = {};
   const subtypeCounts = {};
+  const subtypeUpcoming = {};
   const guidesUsed = {};
 
   completed.forEach(t => {
@@ -51,6 +53,16 @@ function renderDashboard() {
         const gn = g.trim().toLowerCase();
         guidesUsed[gn] = (guidesUsed[gn] || 0) + 1;
       });
+    }
+  });
+
+  upcoming.forEach(t => {
+    const cat = getTypeCategory(t.type);
+    categoryUpcoming[cat] = (categoryUpcoming[cat] || 0) + 1;
+
+    if (t.subtype) {
+      const key = `${cat}_${t.subtype}`;
+      subtypeUpcoming[key] = (subtypeUpcoming[key] || 0) + 1;
     }
   });
 
@@ -72,6 +84,7 @@ function renderDashboard() {
 
   Object.entries(REQUIREMENTS).forEach(([cat, req]) => {
     const count = categoryCounts[cat] || 0;
+    const upCount = categoryUpcoming[cat] || 0;
     const pct = Math.min(Math.round((count / req.min) * 100), 100);
     const done = count >= req.min;
 
@@ -79,12 +92,14 @@ function renderDashboard() {
     if (req.subcategories) {
       subcatHtml = Object.entries(req.subcategories).map(([sub, subReq]) => {
         const subCount = subtypeCounts[`${cat}_${sub}`] || 0;
+        const subUp = subtypeUpcoming[`${cat}_${sub}`] || 0;
         const subPct = Math.min(Math.round((subCount / subReq.min) * 100), 100);
         const subDone = subCount >= subReq.min;
         return `<div class="subcategory-row">
           <span class="w-28 truncate">${subReq.label}</span>
           <div class="progress-bar-bg"><div class="progress-bar-fill ${subDone ? 'complete' : ''}" style="width:${subPct}%"></div></div>
           <span class="text-xs font-medium w-8 text-right">${subCount}/${subReq.min}</span>
+          ${subUp > 0 ? `<span class="text-xs text-blue-500 w-16 text-right">+${subUp} angemeldet</span>` : `<span class="w-16"></span>`}
         </div>`;
       }).join('');
     }
@@ -102,10 +117,12 @@ function renderDashboard() {
 
     const card = document.createElement('div');
     card.className = 'category-card';
+    const upcomingLabel = upCount > 0 ? `<span class="text-xs text-blue-500 font-normal ml-2">+ ${upCount} angemeldet</span>` : '';
+
     card.innerHTML = `
       <div class="flex items-center justify-between">
         <div class="category-label">${req.label}</div>
-        <span class="text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}">${count}/${req.min} ${done ? '✓' : ''}</span>
+        <span class="text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}">Absolviert ${count}/${req.min} ${done ? '✓' : ''}${upcomingLabel}</span>
       </div>
       ${req.note ? `<div class="text-xs text-gray-400 mb-2">${req.note}</div>` : ''}
       <div class="progress-bar-bg mb-1">
