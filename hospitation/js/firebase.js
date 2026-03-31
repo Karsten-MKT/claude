@@ -132,6 +132,7 @@ function saveTour(tour) {
   const id = tour.id || generateTourId(tour.type, tour.date, tour.time);
   const data = { ...tour };
   delete data.id;
+  delete data.exists;
   if (!data.createdAt) data.createdAt = Date.now();
   return toursRef.child(id).set(data).then(() => id);
 }
@@ -146,6 +147,7 @@ function saveToursBatch(tours) {
     const id = tour.id || generateTourId(tour.type, tour.date, tour.time);
     const data = { ...tour };
     delete data.id;
+    delete data.exists;
     if (!data.createdAt) data.createdAt = Date.now();
     updates[id] = data;
   });
