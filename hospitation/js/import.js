@@ -99,7 +99,7 @@ function parseWorkbook(wb) {
     'Bierführung': parseBierfuehrung,
     'Lukullisch': parseLukullisch,
     'Gänge': parseGaenge,
-    'Glanz &Gloria': parseGlanzGloria,
+    'Glanz & Gloria': parseGlanzGloria,
     'Kostume': parseKostueme,
     'Nachtwächter': parseNachtwaechter
   };
@@ -108,7 +108,8 @@ function parseWorkbook(wb) {
     // Try exact match first, then fuzzy
     let parser = parsers[sheetName];
     if (!parser) {
-      const key = Object.keys(parsers).find(k => sheetName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(sheetName.toLowerCase()));
+      const normalize = s => s.toLowerCase().replace(/\s+/g, '');
+      const key = Object.keys(parsers).find(k => normalize(sheetName).includes(normalize(k)) || normalize(k).includes(normalize(sheetName)));
       if (key) parser = parsers[key];
     }
     if (!parser) {
