@@ -1,16 +1,13 @@
-// NutriSnap API - Claude Vision Integration
+// NutriSnap API - Claude Vision Integration via Cloudflare Worker Proxy
 const API = {
     async analyzeFood(imageBase64) {
         const mediaType = imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
-        const response = await fetch(CONFIG.ANTHROPIC_API_URL, {
+        const response = await fetch(CONFIG.WORKER_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-api-key': CONFIG.ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true',
             },
             body: JSON.stringify({
                 model: CONFIG.ANTHROPIC_MODEL,
