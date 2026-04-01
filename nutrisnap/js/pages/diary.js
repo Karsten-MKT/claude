@@ -42,20 +42,20 @@ const DiaryPage = {
                         return `
                             <button onclick="DiaryPage.selectDate('${date}')"
                                 class="flex-shrink-0 w-14 py-2 rounded-xl text-center transition-all
-                                    ${isSelected ? 'bg-sage text-white' : 'bg-white text-charcoal hover:bg-beige'}">
+                                    ${isSelected ? 'bg-mint text-white shadow-md' : 'bg-white text-charcoal hover:bg-mint-light'}">
                                 <p class="text-[10px] font-medium uppercase">${dayName}</p>
                                 <p class="text-lg font-bold">${dayNum}</p>
-                                ${hasMeals ? `<div class="w-1.5 h-1.5 rounded-full mx-auto mt-0.5 ${isSelected ? 'bg-white/60' : 'bg-sage'}"></div>` : '<div class="h-2"></div>'}
+                                ${hasMeals ? `<div class="w-1.5 h-1.5 rounded-full mx-auto mt-0.5 ${isSelected ? 'bg-white/60' : 'bg-mint'}"></div>` : '<div class="h-2"></div>'}
                             </button>
                         `;
                     }).join('')}
                 </div>
 
                 <!-- Day Summary -->
-                <div class="card">
+                <div class="card card-leaf">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-sm font-semibold">Tageszusammenfassung</h3>
-                        <span class="text-xs px-2 py-1 rounded-lg ${totals.kalorien <= dailyNeeds ? 'bg-sage/10 text-sage-dark' : 'bg-red-50 text-red-600'}">
+                        <span class="text-xs px-2 py-1 rounded-lg ${totals.kalorien <= dailyNeeds ? 'bg-mint-light text-mint-dark' : 'bg-coral-light text-coral'}">
                             ${totals.kalorien <= dailyNeeds ? 'Im Defizit' : 'Überschuss'}
                         </span>
                     </div>
@@ -65,15 +65,15 @@ const DiaryPage = {
                             <p class="text-[10px] text-charcoal-light">kcal</p>
                         </div>
                         <div class="p-2 rounded-lg bg-cream">
-                            <p class="text-lg font-bold text-sage">${totals.protein}g</p>
+                            <p class="text-lg font-bold text-mint">${totals.protein}g</p>
                             <p class="text-[10px] text-charcoal-light">Protein</p>
                         </div>
                         <div class="p-2 rounded-lg bg-cream">
-                            <p class="text-lg font-bold text-warm">${totals.fett}g</p>
+                            <p class="text-lg font-bold text-coral">${totals.fett}g</p>
                             <p class="text-[10px] text-charcoal-light">Fett</p>
                         </div>
                         <div class="p-2 rounded-lg bg-cream">
-                            <p class="text-lg font-bold" style="color:#7BA3C4">${totals.kohlenhydrate}g</p>
+                            <p class="text-lg font-bold text-sky">${totals.kohlenhydrate}g</p>
                             <p class="text-[10px] text-charcoal-light">Karbs</p>
                         </div>
                     </div>
@@ -99,8 +99,8 @@ const DiaryPage = {
     renderMealEntry(meal) {
         const time = new Date(meal.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         return `
-            <div class="meal-item flex items-center gap-3 p-3 rounded-xl bg-cream/50 group">
-                <div class="w-10 h-10 rounded-xl bg-beige flex items-center justify-center text-lg flex-shrink-0">
+            <div class="meal-item flex items-center gap-3 p-3 rounded-xl bg-mint-light/30 group">
+                <div class="w-10 h-10 rounded-xl bg-mint-light flex items-center justify-center text-lg flex-shrink-0">
                     🍽️
                 </div>
                 <div class="flex-1 min-w-0">

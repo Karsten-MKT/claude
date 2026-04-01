@@ -29,7 +29,7 @@ const CapturePage = {
                         ${this.state.imageData ? `
                             <img src="${this.state.imageData}" alt="Vorschau" class="max-h-64 mx-auto rounded-xl mb-4 object-cover"/>
                         ` : `
-                            <svg class="w-16 h-16 mx-auto text-sand mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-16 h-16 mx-auto text-mint/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
@@ -85,17 +85,17 @@ const CapturePage = {
                     <p class="text-sm text-charcoal-light mb-4">Portion: ${r.portionsgroesse}</p>
 
                     <!-- Kalorien -->
-                    <div class="text-center p-4 bg-sage/10 rounded-xl mb-4">
-                        <p class="text-3xl font-bold text-sage">${r.kalorien}</p>
-                        <p class="text-sm text-sage-dark">Kalorien (kcal)</p>
+                    <div class="text-center p-4 bg-mint-light rounded-xl mb-4">
+                        <p class="text-3xl font-bold text-mint">${r.kalorien}</p>
+                        <p class="text-sm text-mint-dark">Kalorien (kcal)</p>
                     </div>
 
                     <!-- Nährwerte Grid -->
                     <div class="grid grid-cols-2 gap-3 mb-4">
-                        ${this.renderNutrientBox('Protein', r.protein, 'g', '#8B9E7E')}
-                        ${this.renderNutrientBox('Fett', r.fett, 'g', '#B8956A')}
-                        ${this.renderNutrientBox('Kohlenhydrate', r.kohlenhydrate, 'g', '#7BA3C4')}
-                        ${this.renderNutrientBox('Ballaststoffe', r.ballaststoffe, 'g', '#9B8EC4')}
+                        ${this.renderNutrientBox('Protein', r.protein, 'g', '#5CB88A')}
+                        ${this.renderNutrientBox('Fett', r.fett, 'g', '#F28B73')}
+                        ${this.renderNutrientBox('Kohlenhydrate', r.kohlenhydrate, 'g', '#7BBBDD')}
+                        ${this.renderNutrientBox('Ballaststoffe', r.ballaststoffe, 'g', '#A78BDB')}
                     </div>
 
                     <div class="flex gap-3">
@@ -109,7 +109,7 @@ const CapturePage = {
 
     renderNutrientBox(label, value, unit, color) {
         return `
-            <div class="p-3 rounded-xl bg-cream text-center">
+            <div class="p-3 rounded-xl bg-cream text-center nutrient-box">
                 <p class="text-lg font-bold" style="color: ${color}">${value}${unit}</p>
                 <p class="text-[11px] text-charcoal-light">${label}</p>
             </div>

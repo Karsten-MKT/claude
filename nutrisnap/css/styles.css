@@ -10,14 +10,45 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Subtle leaf background pattern */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M20 30c5-15 20-20 30-15s10 18 0 25-25 5-30 15' fill='none' stroke='%235CB88A' stroke-width='1.5'/%3E%3Cpath d='M80 70c-5 15-20 20-30 15s-10-18 0-25 25-5 30-15' fill='none' stroke='%235CB88A' stroke-width='1.5'/%3E%3Cpath d='M90 20c3-8 12-10 16-6s4 12-2 15' fill='none' stroke='%238B9E7E' stroke-width='1'/%3E%3Cpath d='M30 95c-3 8-12 10-16 6s-4-12 2-15' fill='none' stroke='%238B9E7E' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 120px 120px;
+}
+
+#app {
+    position: relative;
+    z-index: 1;
+}
+
 /* Smooth page transitions */
 #main-content {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.25s ease-out;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header vine decoration */
+.header-vine::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    opacity: 0.15;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='6' viewBox='0 0 200 6'%3E%3Cpath d='M0 3c10-3 20 3 30 0s20-3 30 0 20 3 30 0 20-3 30 0 20 3 30 0 20-3 30 0 20 3 30 0' fill='none' stroke='%235CB88A' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: repeat-x;
+    background-size: 200px 6px;
 }
 
 /* Active nav button */
@@ -26,12 +57,17 @@ body {
     opacity: 0.5;
 }
 .nav-btn.active {
-    color: #8B9E7E;
+    color: #5CB88A;
     opacity: 1;
 }
-.nav-btn.active .bg-sage {
-    background-color: #8B9E7E;
-    box-shadow: 0 4px 12px rgba(139, 158, 126, 0.4);
+
+/* Capture FAB button */
+.capture-fab {
+    background: linear-gradient(135deg, #5CB88A 0%, #3D8B63 100%);
+    box-shadow: 0 4px 14px rgba(92, 184, 138, 0.4);
+}
+.nav-btn.active .capture-fab {
+    box-shadow: 0 4px 16px rgba(92, 184, 138, 0.5);
 }
 
 /* Calorie ring */
@@ -45,10 +81,32 @@ body {
 /* Card style */
 .card {
     background: white;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    border: 1px solid #F5F0EB;
+    box-shadow: 0 2px 12px rgba(92, 184, 138, 0.06);
+    border: 1px solid #E8F5EE;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Card with leaf decoration */
+.card-leaf::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    opacity: 0.12;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4c8 2 12 10 10 18-2-6-8-10-14-10 0 6 4 12 10 14C14 28 6 22 4 14 6 8 10 4 16 4z' fill='%235CB88A'/%3E%3Cpath d='M16 4c0 8-4 14-8 18' fill='none' stroke='%233D8B63' stroke-width='0.8'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+/* Hero card with gradient */
+.card-hero {
+    background: linear-gradient(135deg, #ffffff 0%, #E8F5EE 100%);
 }
 
 /* Macro bar */
@@ -67,6 +125,7 @@ body {
 /* Meal item */
 .meal-item {
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border-left: 3px solid rgba(92, 184, 138, 0.25);
 }
 .meal-item:active {
     transform: scale(0.98);
@@ -74,22 +133,23 @@ body {
 
 /* Photo capture area */
 .capture-area {
-    border: 2px dashed #D4C5B5;
+    border: 2px dashed #A8D8BA;
     border-radius: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0faf4 100%);
     transition: border-color 0.2s, background-color 0.2s;
     cursor: pointer;
 }
 .capture-area:hover, .capture-area.dragover {
-    border-color: #8B9E7E;
-    background-color: rgba(139, 158, 126, 0.05);
+    border-color: #5CB88A;
+    background: linear-gradient(135deg, #ffffff 0%, #E8F5EE 100%);
 }
 
 /* Loading spinner */
 .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #F5F0EB;
-    border-top-color: #8B9E7E;
+    border: 3px solid #E8F5EE;
+    border-top-color: #5CB88A;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -106,7 +166,7 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #D4C5B5;
+    background: #A8D8BA;
     border-radius: 2px;
 }
 
@@ -119,16 +179,17 @@ body {
     background: white;
     font-size: 15px;
     color: #3D3D3D;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     outline: none;
     font-family: 'Inter', sans-serif;
 }
 .input-field:focus {
-    border-color: #8B9E7E;
+    border-color: #5CB88A;
+    box-shadow: 0 0 0 3px rgba(92, 184, 138, 0.1);
 }
 
 .btn-primary {
-    background: #8B9E7E;
+    background: linear-gradient(135deg, #5CB88A 0%, #3D8B63 100%);
     color: white;
     padding: 12px 24px;
     border-radius: 12px;
@@ -136,16 +197,22 @@ body {
     font-size: 15px;
     border: none;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
     width: 100%;
     font-family: 'Inter', sans-serif;
+    box-shadow: 0 2px 8px rgba(92, 184, 138, 0.25);
 }
 .btn-primary:hover {
-    background: #6B7E5E;
+    background: linear-gradient(135deg, #3D8B63 0%, #2D6B4A 100%);
+    box-shadow: 0 4px 12px rgba(92, 184, 138, 0.35);
+}
+.btn-primary:active {
+    transform: scale(0.98);
 }
 .btn-primary:disabled {
     background: #D4C5B5;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
 .btn-secondary {
@@ -179,4 +246,23 @@ select.input-field {
     align-items: center;
     justify-content: space-between;
     padding: 12px 0;
+}
+
+/* Nutrient box with subtle leaf corner */
+.nutrient-box {
+    position: relative;
+    overflow: hidden;
+}
+.nutrient-box::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    opacity: 0.08;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c6 2 10 8 8 14-2-5-7-8-12-8 0 5 3 10 8 12C10 22 4 17 2 10c2-5 5-8 10-8z' fill='%235CB88A'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
 }

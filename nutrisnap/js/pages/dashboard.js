@@ -15,13 +15,13 @@ const DashboardPage = {
         const radius = 70;
         const circumference = 2 * Math.PI * radius;
         const offset = circumference - (percentage / 100) * circumference;
-        const ringColor = isDeficit ? '#8B9E7E' : '#D4644A';
+        const ringColor = isDeficit ? '#5CB88A' : '#F28B73';
 
         if (!profile) {
             return `
                 <div class="px-5 py-8">
-                    <div class="card text-center">
-                        <div class="text-4xl mb-4">👋</div>
+                    <div class="card card-leaf text-center">
+                        <div class="text-4xl mb-4">🌱</div>
                         <h2 class="text-lg font-semibold mb-2">Willkommen bei NutriSnap!</h2>
                         <p class="text-charcoal-light text-sm mb-6">Richte zuerst dein Profil ein, damit wir deinen Kalorienbedarf berechnen können.</p>
                         <button onclick="router.navigate('profile')" class="btn-primary">Profil einrichten</button>
@@ -39,10 +39,10 @@ const DashboardPage = {
                 <p class="text-sm text-charcoal-light">${dateStr}</p>
 
                 <!-- Calorie Ring Card -->
-                <div class="card flex items-center gap-6">
+                <div class="card card-hero card-leaf flex items-center gap-6">
                     <div class="relative flex-shrink-0">
                         <svg class="calorie-ring" width="160" height="160" viewBox="0 0 160 160">
-                            <circle cx="80" cy="80" r="${radius}" fill="none" stroke="#F5F0EB" stroke-width="10"/>
+                            <circle cx="80" cy="80" r="${radius}" fill="none" stroke="#E8F5EE" stroke-width="10"/>
                             <circle cx="80" cy="80" r="${radius}" fill="none" stroke="${ringColor}" stroke-width="10"
                                 stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
                                 stroke-linecap="round"/>
@@ -53,11 +53,11 @@ const DashboardPage = {
                         </div>
                     </div>
                     <div class="flex-1 space-y-1">
-                        <div class="text-center px-3 py-2 rounded-xl ${isDeficit ? 'bg-sage/10' : 'bg-red-50'}">
-                            <p class="text-xs ${isDeficit ? 'text-sage-dark' : 'text-red-600'} font-medium">
+                        <div class="text-center px-3 py-2 rounded-xl ${isDeficit ? 'bg-mint-light' : 'bg-coral-light'}">
+                            <p class="text-xs ${isDeficit ? 'text-mint-dark' : 'text-coral'} font-medium">
                                 ${isDeficit ? 'Kaloriendefizit' : 'Kalorienüberschuss'}
                             </p>
-                            <p class="text-lg font-bold ${isDeficit ? 'text-sage' : 'text-red-500'}">
+                            <p class="text-lg font-bold ${isDeficit ? 'text-mint' : 'text-coral'}">
                                 ${isDeficit ? '-' : '+'}${Math.abs(remaining)} kcal
                             </p>
                         </div>
@@ -68,12 +68,12 @@ const DashboardPage = {
                 </div>
 
                 <!-- Macros Card -->
-                <div class="card">
+                <div class="card card-leaf">
                     <h3 class="text-sm font-semibold mb-3">Makronährstoffe</h3>
                     <div class="space-y-3">
-                        ${this.renderMacroBar('Protein', totals.protein, macroTargets.protein, '#8B9E7E')}
-                        ${this.renderMacroBar('Fett', totals.fett, macroTargets.fett, '#B8956A')}
-                        ${this.renderMacroBar('Kohlenhydrate', totals.kohlenhydrate, macroTargets.kohlenhydrate, '#7BA3C4')}
+                        ${this.renderMacroBar('Protein', totals.protein, macroTargets.protein, '#5CB88A')}
+                        ${this.renderMacroBar('Fett', totals.fett, macroTargets.fett, '#F28B73')}
+                        ${this.renderMacroBar('Kohlenhydrate', totals.kohlenhydrate, macroTargets.kohlenhydrate, '#7BBBDD')}
                     </div>
                 </div>
 
@@ -86,7 +86,7 @@ const DashboardPage = {
                     ${meals.length === 0 ? `
                         <div class="text-center py-6">
                             <p class="text-charcoal-light text-sm">Noch keine Mahlzeiten heute</p>
-                            <button onclick="router.navigate('capture')" class="text-sage text-sm font-medium mt-2">+ Mahlzeit hinzufügen</button>
+                            <button onclick="router.navigate('capture')" class="text-mint text-sm font-medium mt-2">+ Mahlzeit hinzufügen</button>
                         </div>
                     ` : `
                         <div class="space-y-2">
@@ -116,8 +116,8 @@ const DashboardPage = {
     renderMealItem(meal) {
         const time = new Date(meal.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
         return `
-            <div class="meal-item flex items-center gap-3 p-3 rounded-xl bg-cream/50 hover:bg-beige/50">
-                <div class="w-10 h-10 rounded-xl bg-beige flex items-center justify-center text-lg flex-shrink-0">
+            <div class="meal-item flex items-center gap-3 p-3 rounded-xl bg-mint-light/30 hover:bg-mint-light/50">
+                <div class="w-10 h-10 rounded-xl bg-mint-light flex items-center justify-center text-lg flex-shrink-0">
                     🍽️
                 </div>
                 <div class="flex-1 min-w-0">

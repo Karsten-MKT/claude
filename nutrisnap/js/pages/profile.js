@@ -14,7 +14,7 @@ const ProfilePage = {
 
         return `
             <div class="px-5 py-4 space-y-4">
-                <div class="card">
+                <div class="card card-leaf">
                     <h2 class="text-lg font-semibold mb-1">Dein Profil</h2>
                     <p class="text-sm text-charcoal-light mb-5">Diese Daten werden für die Berechnung deines Kalorienbedarfs benötigt.</p>
 
@@ -25,12 +25,12 @@ const ProfilePage = {
                             <div class="flex gap-2 mt-1.5">
                                 <button type="button" onclick="ProfilePage.setGender('maennlich', this)"
                                     class="gender-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all
-                                    ${profile.geschlecht === 'maennlich' ? 'bg-sage text-white' : 'bg-beige text-charcoal'}">
+                                    ${profile.geschlecht === 'maennlich' ? 'bg-mint text-white' : 'bg-beige text-charcoal'}">
                                     Männlich
                                 </button>
                                 <button type="button" onclick="ProfilePage.setGender('weiblich', this)"
                                     class="gender-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all
-                                    ${profile.geschlecht === 'weiblich' ? 'bg-sage text-white' : 'bg-beige text-charcoal'}">
+                                    ${profile.geschlecht === 'weiblich' ? 'bg-mint text-white' : 'bg-beige text-charcoal'}">
                                     Weiblich
                                 </button>
                             </div>
@@ -75,9 +75,9 @@ const ProfilePage = {
                 </div>
 
                 ${dailyNeeds ? `
-                    <div class="card text-center">
+                    <div class="card card-hero card-leaf text-center">
                         <p class="text-xs text-charcoal-light uppercase tracking-wide mb-1">Dein täglicher Kalorienbedarf</p>
-                        <p class="text-3xl font-bold text-sage">${dailyNeeds}</p>
+                        <p class="text-3xl font-bold text-mint">${dailyNeeds}</p>
                         <p class="text-sm text-charcoal-light">kcal pro Tag</p>
                     </div>
                 ` : ''}
@@ -97,9 +97,9 @@ const ProfilePage = {
     setGender(gender) {
         document.getElementById('geschlecht').value = gender;
         document.querySelectorAll('.gender-btn').forEach(btn => {
-            btn.className = btn.className.replace(/bg-sage text-white|bg-beige text-charcoal/g, '');
+            btn.className = btn.className.replace(/bg-mint text-white|bg-beige text-charcoal/g, '');
             if (btn.textContent.trim().toLowerCase().startsWith(gender === 'maennlich' ? 'm' : 'w')) {
-                btn.classList.add('bg-sage', 'text-white');
+                btn.classList.add('bg-mint', 'text-white');
             } else {
                 btn.classList.add('bg-beige', 'text-charcoal');
             }
