@@ -1,0 +1,182 @@
+/* NutriSnap Custom Styles */
+
+* {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth page transitions */
+#main-content {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Active nav button */
+.nav-btn {
+    color: #B8956A;
+    opacity: 0.5;
+}
+.nav-btn.active {
+    color: #8B9E7E;
+    opacity: 1;
+}
+.nav-btn.active .bg-sage {
+    background-color: #8B9E7E;
+    box-shadow: 0 4px 12px rgba(139, 158, 126, 0.4);
+}
+
+/* Calorie ring */
+.calorie-ring {
+    transform: rotate(-90deg);
+}
+.calorie-ring circle {
+    transition: stroke-dashoffset 0.8s ease-out;
+}
+
+/* Card style */
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid #F5F0EB;
+}
+
+/* Macro bar */
+.macro-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: #F5F0EB;
+    overflow: hidden;
+}
+.macro-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease-out;
+}
+
+/* Meal item */
+.meal-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.meal-item:active {
+    transform: scale(0.98);
+}
+
+/* Photo capture area */
+.capture-area {
+    border: 2px dashed #D4C5B5;
+    border-radius: 20px;
+    transition: border-color 0.2s, background-color 0.2s;
+    cursor: pointer;
+}
+.capture-area:hover, .capture-area.dragover {
+    border-color: #8B9E7E;
+    background-color: rgba(139, 158, 126, 0.05);
+}
+
+/* Loading spinner */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #F5F0EB;
+    border-top-color: #8B9E7E;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #D4C5B5;
+    border-radius: 2px;
+}
+
+/* Input styles */
+.input-field {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid #E8DFD6;
+    border-radius: 12px;
+    background: white;
+    font-size: 15px;
+    color: #3D3D3D;
+    transition: border-color 0.2s;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+}
+.input-field:focus {
+    border-color: #8B9E7E;
+}
+
+.btn-primary {
+    background: #8B9E7E;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+}
+.btn-primary:hover {
+    background: #6B7E5E;
+}
+.btn-primary:disabled {
+    background: #D4C5B5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #F5F0EB;
+    color: #3D3D3D;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+.btn-secondary:hover {
+    background: #E8DFD6;
+}
+
+/* Select style */
+select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B6B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
+
+/* Toggle switch */
+.toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+}
