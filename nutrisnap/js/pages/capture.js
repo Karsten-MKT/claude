@@ -116,15 +116,15 @@ const CapturePage = {
         `;
     },
 
-    compressImage(dataUrl, maxSizeBytes = 4 * 1024 * 1024) {
+    compressImage(dataUrl) {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 let { width, height } = img;
 
-                // Scale down large images
-                const maxDim = 1600;
+                // Scale down to max 1024px - keeps file well under 5MB
+                const maxDim = 1024;
                 if (width > maxDim || height > maxDim) {
                     const ratio = Math.min(maxDim / width, maxDim / height);
                     width = Math.round(width * ratio);
@@ -135,14 +135,7 @@ const CapturePage = {
                 canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
 
-                // Try decreasing quality until under limit
-                let quality = 0.8;
-                let result = canvas.toDataURL('image/jpeg', quality);
-                while (result.length * 0.75 > maxSizeBytes && quality > 0.2) {
-                    quality -= 0.1;
-                    result = canvas.toDataURL('image/jpeg', quality);
-                }
-                resolve(result);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             img.src = dataUrl;
         });
