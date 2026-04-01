@@ -116,13 +116,45 @@ const CapturePage = {
         `;
     },
 
+    compressImage(dataUrl, maxSizeBytes = 4 * 1024 * 1024) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+
+                // Scale down large images
+                const maxDim = 1600;
+                if (width > maxDim || height > maxDim) {
+                    const ratio = Math.min(maxDim / width, maxDim / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+                // Try decreasing quality until under limit
+                let quality = 0.8;
+                let result = canvas.toDataURL('image/jpeg', quality);
+                while (result.length * 0.75 > maxSizeBytes && quality > 0.2) {
+                    quality -= 0.1;
+                    result = canvas.toDataURL('image/jpeg', quality);
+                }
+                resolve(result);
+            };
+            img.src = dataUrl;
+        });
+    },
+
     handleImageSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            this.state.imageData = e.target.result;
+        reader.onload = async (e) => {
+            this.state.imageData = await this.compressImage(e.target.result);
             this.state.error = null;
             this.state.result = null;
             router.refresh();
