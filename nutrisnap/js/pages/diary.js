@@ -13,13 +13,8 @@ const DiaryPage = {
         const meals = Store.getMealsForDate(this.selectedDate);
         const profile = Store.getProfile();
         const dailyNeeds = Store.calculateDailyNeeds(profile);
-
-        const totals = {
-            kalorien: meals.reduce((s, m) => s + (m.kalorien || 0), 0),
-            protein: meals.reduce((s, m) => s + (m.protein || 0), 0),
-            fett: meals.reduce((s, m) => s + (m.fett || 0), 0),
-            kohlenhydrate: meals.reduce((s, m) => s + (m.kohlenhydrate || 0), 0),
-        };
+        const totals = Store.getTotalsForDate(this.selectedDate);
+        const rda = Nutrients.getRDA(profile);
 
         // Get last 7 days for date picker
         const recentDates = [];
@@ -28,6 +23,10 @@ const DiaryPage = {
             d.setDate(d.getDate() - i);
             recentDates.push(d.toISOString().split('T')[0]);
         }
+
+        // Water for selected date
+        const water = Store.getWaterForDate(this.selectedDate);
+        const waterTarget = Store.calculateDailyWaterNeed(profile);
 
         return `
             <div class="px-5 py-4 space-y-4">
@@ -76,6 +75,34 @@ const DiaryPage = {
                             <p class="text-lg font-bold text-sky">${totals.kohlenhydrate}g</p>
                             <p class="text-[10px] text-charcoal-light">Karbs</p>
                         </div>
+                    </div>
+                    <!-- Water for day -->
+                    <div class="mt-2 p-2 rounded-lg bg-cream flex items-center gap-2">
+                        <span class="text-sm">💧</span>
+                        <div class="flex-1">
+                            <div class="water-bar" style="height:5px">
+                                <div class="water-bar-fill" style="width:${Math.min((water.total / waterTarget) * 100, 100)}%"></div>
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-charcoal-light">${water.total}/${waterTarget}ml</span>
+                    </div>
+                </div>
+
+                <!-- Micronutrient summary for day -->
+                <div class="card">
+                    <h3 class="text-sm font-semibold mb-2">Vitamine & Mineralstoffe</h3>
+                    <div class="grid grid-cols-5 gap-1.5">
+                        ${Object.entries(rda).map(([key, info]) => {
+                            const current = totals[key] || 0;
+                            const pct = Math.round((current / info.target) * 100);
+                            const color = Nutrients.getColor(Math.min(pct, 100));
+                            return `
+                                <div class="text-center p-1.5 rounded-lg bg-cream/70">
+                                    <p class="text-xs font-bold" style="color:${color}">${pct}%</p>
+                                    <p class="text-[9px] text-charcoal-light leading-tight">${info.label.replace('Vitamin ', 'Vit. ')}</p>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
 

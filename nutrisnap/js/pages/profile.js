@@ -7,10 +7,11 @@ const ProfilePage = {
             groesse: '',
             gewicht: '',
             aktivitaet: 'moderat',
-            ziel: 'abnehmen'
+            waterReminders: false
         };
 
         const dailyNeeds = profile.alter ? Store.calculateDailyNeeds(profile) : null;
+        const waterNeeds = profile.gewicht ? Store.calculateDailyWaterNeed(profile) : null;
 
         return `
             <div class="px-5 py-4 space-y-4">
@@ -23,12 +24,12 @@ const ProfilePage = {
                         <div>
                             <label class="text-xs font-medium text-charcoal-light uppercase tracking-wide">Geschlecht</label>
                             <div class="flex gap-2 mt-1.5">
-                                <button type="button" onclick="ProfilePage.setGender('maennlich', this)"
+                                <button type="button" onclick="ProfilePage.setGender('maennlich')"
                                     class="gender-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all
                                     ${profile.geschlecht === 'maennlich' ? 'bg-mint text-white' : 'bg-beige text-charcoal'}">
                                     Männlich
                                 </button>
-                                <button type="button" onclick="ProfilePage.setGender('weiblich', this)"
+                                <button type="button" onclick="ProfilePage.setGender('weiblich')"
                                     class="gender-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all
                                     ${profile.geschlecht === 'weiblich' ? 'bg-mint text-white' : 'bg-beige text-charcoal'}">
                                     Weiblich
@@ -70,15 +71,40 @@ const ProfilePage = {
                             </select>
                         </div>
 
+                        <!-- Water Reminders Toggle -->
+                        <div class="flex items-center justify-between p-3 bg-cream rounded-xl">
+                            <div>
+                                <p class="text-sm font-medium">💧 Trink-Erinnerungen</p>
+                                <p class="text-[11px] text-charcoal-light">Benachrichtigung bei zu wenig Wasser</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="waterReminders" class="sr-only peer"
+                                    ${profile.waterReminders ? 'checked' : ''}
+                                    onchange="ProfilePage.toggleWaterReminders(this.checked)">
+                                <div class="w-11 h-6 bg-beige-dark rounded-full peer peer-checked:bg-mint transition-colors
+                                    after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white
+                                    after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                            </label>
+                        </div>
+
                         <button type="submit" class="btn-primary mt-2">Profil speichern</button>
                     </form>
                 </div>
 
                 ${dailyNeeds ? `
-                    <div class="card card-hero card-leaf text-center">
-                        <p class="text-xs text-charcoal-light uppercase tracking-wide mb-1">Dein täglicher Kalorienbedarf</p>
-                        <p class="text-3xl font-bold text-mint">${dailyNeeds}</p>
-                        <p class="text-sm text-charcoal-light">kcal pro Tag</p>
+                    <div class="card card-hero card-leaf">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <p class="text-xs text-charcoal-light uppercase tracking-wide mb-1">Kalorienbedarf</p>
+                                <p class="text-2xl font-bold text-mint">${dailyNeeds}</p>
+                                <p class="text-xs text-charcoal-light">kcal / Tag</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-charcoal-light uppercase tracking-wide mb-1">Wasserbedarf</p>
+                                <p class="text-2xl font-bold text-sky">${waterNeeds}</p>
+                                <p class="text-xs text-charcoal-light">ml / Tag</p>
+                            </div>
+                        </div>
                     </div>
                 ` : ''}
 
@@ -106,6 +132,19 @@ const ProfilePage = {
         });
     },
 
+    async toggleWaterReminders(enabled) {
+        if (enabled) {
+            const granted = await WaterReminder.requestPermission();
+            if (!granted) {
+                document.getElementById('waterReminders').checked = false;
+                return;
+            }
+            WaterReminder.start();
+        } else {
+            WaterReminder.stop();
+        }
+    },
+
     save(event) {
         event.preventDefault();
         const profile = {
@@ -114,15 +153,25 @@ const ProfilePage = {
             groesse: parseInt(document.getElementById('groesse').value),
             gewicht: parseFloat(document.getElementById('gewicht').value),
             aktivitaet: document.getElementById('aktivitaet').value,
+            waterReminders: document.getElementById('waterReminders').checked,
         };
         Store.saveProfile(profile);
+
+        if (profile.waterReminders) {
+            WaterReminder.start();
+        } else {
+            WaterReminder.stop();
+        }
+
         router.navigate('dashboard');
     },
 
     clearAllData() {
-        if (confirm('Wirklich alle Daten (Profil und Mahlzeiten) löschen? Dies kann nicht rückgängig gemacht werden.')) {
+        if (confirm('Wirklich alle Daten (Profil, Mahlzeiten, Wasser) löschen? Dies kann nicht rückgängig gemacht werden.')) {
             localStorage.removeItem(Store.KEYS.PROFILE);
             localStorage.removeItem(Store.KEYS.MEALS);
+            localStorage.removeItem(Store.KEYS.WATER);
+            WaterReminder.stop();
             router.refresh();
         }
     }

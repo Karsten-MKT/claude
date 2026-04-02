@@ -2,6 +2,7 @@
 const CapturePage = {
     state: {
         imageData: null,
+        foodDescription: '',
         analyzing: false,
         result: null,
         error: null,
@@ -42,7 +43,13 @@ const CapturePage = {
                         class="hidden" onchange="CapturePage.handleImageSelect(event)">
 
                     ${this.state.imageData ? `
-                        <div class="flex gap-3 mt-4">
+                        <!-- Food description -->
+                        <textarea id="food-description" class="input-field mt-4" rows="2"
+                            placeholder="Optional: Beschreibe das Essen (z.B. 'Pasta mit Tomatensauce und Parmesan')"
+                            oninput="CapturePage.state.foodDescription = this.value"
+                        >${this.state.foodDescription}</textarea>
+
+                        <div class="flex gap-3 mt-3">
                             <button onclick="CapturePage.reset()" class="btn-secondary flex-1">Neues Foto</button>
                             <button onclick="CapturePage.analyze()" class="btn-primary flex-1">Analysieren</button>
                         </div>
@@ -90,12 +97,32 @@ const CapturePage = {
                         <p class="text-sm text-mint-dark">Kalorien (kcal)</p>
                     </div>
 
-                    <!-- Nährwerte Grid -->
+                    <!-- Makronährstoffe -->
+                    <h3 class="text-xs font-semibold text-charcoal-light uppercase tracking-wide mb-2">Makronährstoffe</h3>
                     <div class="grid grid-cols-2 gap-3 mb-4">
                         ${this.renderNutrientBox('Protein', r.protein, 'g', '#5CB88A')}
                         ${this.renderNutrientBox('Fett', r.fett, 'g', '#F28B73')}
                         ${this.renderNutrientBox('Kohlenhydrate', r.kohlenhydrate, 'g', '#7BBBDD')}
                         ${this.renderNutrientBox('Ballaststoffe', r.ballaststoffe, 'g', '#A78BDB')}
+                    </div>
+
+                    <!-- Mikronährstoffe (collapsible) -->
+                    <button onclick="document.getElementById('micro-details').classList.toggle('hidden')"
+                        class="flex items-center gap-2 text-xs font-semibold text-charcoal-light uppercase tracking-wide mb-2 w-full">
+                        <span>Vitamine & Mineralstoffe</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div id="micro-details" class="grid grid-cols-3 gap-2 mb-4">
+                        ${this.renderMicroBox('Eisen', r.eisen, 'mg')}
+                        ${this.renderMicroBox('Vit. A', r.vitamin_a, 'mcg')}
+                        ${this.renderMicroBox('Vit. B12', r.vitamin_b12, 'mcg')}
+                        ${this.renderMicroBox('Vit. C', r.vitamin_c, 'mg')}
+                        ${this.renderMicroBox('Vit. D', r.vitamin_d, 'mcg')}
+                        ${this.renderMicroBox('Vit. E', r.vitamin_e, 'mg')}
+                        ${this.renderMicroBox('Kalzium', r.kalzium, 'mg')}
+                        ${this.renderMicroBox('Magnesium', r.magnesium, 'mg')}
+                        ${this.renderMicroBox('Zink', r.zink, 'mg')}
+                        ${this.renderMicroBox('Kalium', r.kalium, 'mg')}
                     </div>
 
                     <div class="flex gap-3">
@@ -116,25 +143,30 @@ const CapturePage = {
         `;
     },
 
+    renderMicroBox(label, value, unit) {
+        return `
+            <div class="p-2 rounded-lg bg-cream/70 text-center">
+                <p class="text-sm font-semibold text-charcoal">${value}<span class="text-[10px] text-charcoal-light ml-0.5">${unit}</span></p>
+                <p class="text-[10px] text-charcoal-light">${label}</p>
+            </div>
+        `;
+    },
+
     compressImage(dataUrl) {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 let { width, height } = img;
-
-                // Scale down to max 1024px - keeps file well under 5MB
                 const maxDim = 1024;
                 if (width > maxDim || height > maxDim) {
                     const ratio = Math.min(maxDim / width, maxDim / height);
                     width = Math.round(width * ratio);
                     height = Math.round(height * ratio);
                 }
-
                 canvas.width = width;
                 canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-
                 resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             img.src = dataUrl;
@@ -144,7 +176,6 @@ const CapturePage = {
     handleImageSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = async (e) => {
             this.state.imageData = await this.compressImage(e.target.result);
@@ -157,13 +188,13 @@ const CapturePage = {
 
     async analyze() {
         if (!this.state.imageData) return;
-
+        this.state.foodDescription = document.getElementById('food-description')?.value || '';
         this.state.analyzing = true;
         this.state.error = null;
         router.refresh();
 
         try {
-            this.state.result = await API.analyzeFood(this.state.imageData);
+            this.state.result = await API.analyzeFood(this.state.imageData, this.state.foodDescription);
         } catch (err) {
             this.state.error = `Fehler bei der Analyse: ${err.message}`;
             this.state.result = null;
@@ -187,6 +218,7 @@ const CapturePage = {
 
     reset() {
         this.state.imageData = null;
+        this.state.foodDescription = '';
         this.state.analyzing = false;
         this.state.result = null;
         this.state.error = null;

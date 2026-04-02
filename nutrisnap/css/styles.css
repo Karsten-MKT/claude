@@ -248,6 +248,45 @@ select.input-field {
     padding: 12px 0;
 }
 
+/* Water bar */
+.water-bar {
+    height: 12px;
+    border-radius: 6px;
+    background: #E8F5EE;
+    overflow: hidden;
+}
+.water-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #7BBBDD 0%, #5CA8D0 100%);
+    transition: width 0.5s ease-out;
+}
+
+/* Water quick-add buttons */
+.water-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1.5px solid #E8F5EE;
+    background: white;
+    color: #3D3D3D;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+.water-btn:hover, .water-btn:active {
+    background: #E8F5EE;
+    border-color: #7BBBDD;
+    color: #5CA8D0;
+}
+.water-btn-main {
+    background: #E8F5EE;
+    border-color: #7BBBDD;
+    color: #5CA8D0;
+    font-weight: 600;
+}
+
 /* Nutrient box with subtle leaf corner */
 .nutrient-box {
     position: relative;
