@@ -25,6 +25,7 @@ const TOUR_TYPES = {
   'schueler':             { label: 'Schülerführung', short: 'Schü', category: 'schueler' },
   'privat':               { label: 'Private Gruppe', short: 'Priv', category: 'privat' },
   'luebsche-verfuehrung': { label: 'Lübsche Verführung', short: 'LübV', category: 'luebsche-verfuehrung' },
+  'travemuende':          { label: 'Travemünde Führung', short: 'Trav', category: 'optional' },
   'glanz-gloria':         { label: 'Glanz & Gloria', short: 'G&G', category: 'optional' }
 };
 

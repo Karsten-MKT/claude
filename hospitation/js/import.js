@@ -101,7 +101,8 @@ function parseWorkbook(wb) {
     'Gänge': parseGaenge,
     'Glanz & Gloria': parseGlanzGloria,
     'Kostume': parseKostueme,
-    'Nachtwächter': parseNachtwaechter
+    'Nachtwächter': parseNachtwaechter,
+    'Travemünde Führung': parseTravemuende
   };
 
   wb.SheetNames.forEach(sheetName => {
@@ -361,6 +362,31 @@ function parseKostueme(rows) {
 
     tours.push({
       type: 'kostueme', category: 'abend', subtype: null,
+      date, time, guides: guide ? [guide] : [],
+      trainee1, trainee2, source: 'excel'
+    });
+  }
+  return tours;
+}
+
+function parseTravemuende(rows) {
+  const tours = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const dateRaw = row[1];
+    const timeRaw = row[2];
+    const guide = cleanString(row[3]);
+    if (!dateRaw && !guide) continue;
+
+    const date = parseDateCell(dateRaw);
+    const time = excelTimeToString(timeRaw);
+    if (!date || !time) continue;
+
+    const trainee1 = matchTrainee(cleanString(row[5]));
+    const trainee2 = matchTrainee(cleanString(row[6]));
+
+    tours.push({
+      type: 'travemuende', category: 'optional', subtype: null,
       date, time, guides: guide ? [guide] : [],
       trainee1, trainee2, source: 'excel'
     });
